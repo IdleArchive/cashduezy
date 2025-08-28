@@ -1,24 +1,26 @@
-import { NextResponse } from "next/server";
-import formData from "form-data";
-import Mailgun from "mailgun.js";
+import nodemailer from "nodemailer";
 
 export async function GET() {
   try {
-    const mailgun = new Mailgun(formData);
-    const mg = mailgun.client({
-      username: "api",
-      key: process.env.MAILGUN_API_KEY!,
+    const transporter = nodemailer.createTransport({
+      host: process.env.MAILGUN_SMTP_HOST,
+      port: Number(process.env.MAILGUN_SMTP_PORT) || 587,
+      auth: {
+        user: process.env.MAILGUN_SMTP_LOGIN,
+        pass: process.env.MAILGUN_SMTP_PASSWORD,
+      },
     });
 
-    await mg.messages.create(process.env.MAILGUN_DOMAIN!, {
-      from: "CashDuezy <postmaster@in.cashduezy.com>",
-      to: "b.sasuta@gmail.com", // test email
-      subject: "CashDuezy Test",
-      text: "This is a test email from your deployed app!",
+    await transporter.sendMail({
+      from: "postmaster@in.cashduezy.com",
+      to: "b.sasuta@gmail.com", // your test email
+      subject: "CashDuezy Test Email",
+      text: "If you're seeing this, your Mailgun SMTP is working ✅",
     });
 
-    return NextResponse.json({ success: true });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return new Response(JSON.stringify({ success: true }), { status: 200 });
+  } catch (err: any) {
+    console.error(err);
+    return new Response(JSON.stringify({ success: false, error: err.message }), { status: 500 });
   }
 }
