@@ -3,8 +3,14 @@ import type { NextRequest } from "next/server";
 import { createMiddlewareClient } from "@supabase/auth-helpers-nextjs";
 
 export async function middleware(req: NextRequest) {
-  // 🚨 Skip Supabase middleware for test routes
-  if (req.nextUrl.pathname.startsWith("/api/test-email")) {
+  const { pathname } = req.nextUrl;
+
+  // 🚨 Skip Supabase middleware for webhook/email routes
+  if (
+    pathname.startsWith("/api/test-email") ||
+    pathname.startsWith("/api/send-welcome") ||
+    pathname.startsWith("/api/send-reminder")
+  ) {
     return NextResponse.next();
   }
 
