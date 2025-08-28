@@ -1,3 +1,7 @@
 ﻿export default function Home() {
-  return <h1>CashDuezy is live 🚀</h1>
+  return (
+    <main style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}>
+      <h1>CashDuezy is live 🚀</h1>
+    </main>
+  )
 }
