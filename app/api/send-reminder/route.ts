@@ -1,13 +1,8 @@
-// app/api/send-reminder/route.ts
 import nodemailer from "nodemailer";
 
 export async function POST(req: Request) {
   try {
     const { to, billName, dueDate } = await req.json();
-
-    if (!to || !billName || !dueDate) {
-      return new Response(JSON.stringify({ success: false, error: "Missing fields" }), { status: 400 });
-    }
 
     const transporter = nodemailer.createTransport({
       host: process.env.MAILGUN_SMTP_HOST || "smtp.mailgun.org",
@@ -22,13 +17,16 @@ export async function POST(req: Request) {
     await transporter.sendMail({
       from: "postmaster@in.cashduezy.com",
       to,
-      subject: `⏰ Reminder: ${billName} due on ${dueDate}`,
-      text: `Hello!\n\nJust a friendly reminder that your bill "${billName}" is due on ${dueDate}. \n\nStay on top with CashDuezy ✅`,
+      subject: `⏰ Reminder: ${billName} is due soon`,
+      text: `Heads up! Your bill "${billName}" is due on ${dueDate}. Don't forget to pay it.`,
     });
 
     return new Response(JSON.stringify({ success: true }), { status: 200 });
-  } catch (err: any) {
-    console.error("Reminder email error:", err);
-    return new Response(JSON.stringify({ success: false, error: err.message }), { status: 500 });
+  } catch (err: unknown) {
+    if (err instanceof Error) {
+      console.error("Reminder email error:", err.message);
+      return new Response(JSON.stringify({ success: false, error: err.message }), { status: 500 });
+    }
+    return new Response(JSON.stringify({ success: false, error: "Unknown error" }), { status: 500 });
   }
 }
