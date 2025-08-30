@@ -282,8 +282,6 @@ export default function DashboardPage() {
   // Derived stats
   const totalSubscriptions = subscriptions.length;
   const activeSubscriptions = subscriptions.filter((s) => !s.cancel_url);
-  // Count both unique names and total active subscriptions
-  const activeUniqueServiceNames = Array.from(new Set(activeSubscriptions.map((s) => s.name)));
   // Number of active subscriptions (total), used for free plan counter
   const activeCount = activeSubscriptions.length;
   const activeServices = activeCount; // renamed for clarity
@@ -468,57 +466,57 @@ export default function DashboardPage() {
     setIsEditModalOpen(true);
   };
   const handleUpdateSubscription = async () => {
-  if (!editingSubscription) return;
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    toast.error('You must be logged in');
-    return;
-  }
-  const amt = Number(form.amount);
-  if (!Number.isFinite(amt) || amt <= 0) {
-    toast.error('Enter a valid amount');
-    return;
-  }
+    if (!editingSubscription) return;
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      toast.error('You must be logged in');
+      return;
+    }
+    const amt = Number(form.amount);
+    if (!Number.isFinite(amt) || amt <= 0) {
+      toast.error('Enter a valid amount');
+      return;
+    }
 
-  const nameToSave =
-    form.name === 'Custom' ? customName.trim() : form.name.trim();
-  if (!nameToSave) {
-    toast.error('Please enter a service name');
-    return;
-  }
+    const nameToSave =
+      form.name === 'Custom' ? customName.trim() : form.name.trim();
+    if (!nameToSave) {
+      toast.error('Please enter a service name');
+      return;
+    }
 
-  const { error: updateErr, data: updated } = await supabase
-    .from('subscriptions')
-    .update({
-      name: nameToSave,
-      amount: amt,
-      currency: form.currency,
-      cadence: form.cadence,
-      next_charge_date: form.next_charge_date || null,
-    })
-    .eq('id', editingSubscription.id)
-    .select()
-    .single();
-  if (updateErr || !updated) {
-    console.error('Update error:', updateErr?.message);
-    toast.error(updateErr?.message || 'Failed to update subscription');
-    return;
-  }
-  setSubscriptions((prev) =>
-    prev.map((s) => (s.id === updated.id ? updated : s))
-  );
-  toast.success(`${updated.name} updated`);
-  setIsEditModalOpen(false);
-  setEditingSubscription(null);
-  setForm({
-    name: '',
-    amount: '',
-    currency: 'USD',
-    cadence: 'monthly',
-    next_charge_date: '',
-    vendor: '',
-  });
-};
+    const { error: updateErr, data: updated } = await supabase
+      .from('subscriptions')
+      .update({
+        name: nameToSave,
+        amount: amt,
+        currency: form.currency,
+        cadence: form.cadence,
+        next_charge_date: form.next_charge_date || null,
+      })
+      .eq('id', editingSubscription.id)
+      .select()
+      .single();
+    if (updateErr || !updated) {
+      console.error('Update error:', updateErr?.message);
+      toast.error(updateErr?.message || 'Failed to update subscription');
+      return;
+    }
+    setSubscriptions((prev) =>
+      prev.map((s) => (s.id === updated.id ? updated : s))
+    );
+    toast.success(`${updated.name} updated`);
+    setIsEditModalOpen(false);
+    setEditingSubscription(null);
+    setForm({
+      name: '',
+      amount: '',
+      currency: 'USD',
+      cadence: 'monthly',
+      next_charge_date: '',
+      vendor: '',
+    });
+  };
 
   // Calculate total spending in next 30 days
   const next30DaysSpending = activeSubscriptions.reduce((sum, s) => {
@@ -920,7 +918,7 @@ export default function DashboardPage() {
   const termsContent = (
     <div className="space-y-3 text-sm">
       <p>
-  These Terms of Service (&quot;Terms&quot;) constitute a legal agreement between you (&quot;you&quot; or &quot;user&quot;) and CashDuezy (&quot;we,&quot; &quot;us,&quot; or &quot;our&quot;) that governs your use of the CashDuezy subscription management service. By creating an account or using our services, you agree to these Terms. If you do not agree to these Terms, do not use the service.
+        These Terms of Service ("Terms") constitute a legal agreement between you ("you" or "user") and CashDuezy ("we," "us," or "our") that governs your use of the CashDuezy subscription management service. By creating an account or using our services, you agree to these Terms. If you do not agree to these Terms, do not use the service.
       </p>
       <p>
         <strong>Service Description.</strong> CashDuezy provides software that allows users to track subscriptions, monitor spending, view upcoming payments, and manage subscription information. We do not provide financial advice.
@@ -968,6 +966,7 @@ export default function DashboardPage() {
 
   return (
     <div className={`min-h-screen flex flex-col ${pageBg} ${pageText} font-sans`}>
+      {/* ===== Header ===== */}
       <header className={`sticky top-0 z-40 w-full ${headerBg} backdrop-blur border-b ${headerBorder}`}>
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -1046,16 +1045,22 @@ export default function DashboardPage() {
           </div>
         </div>
       </header>
+
+      {/* ===== Main ===== */}
       <main className="max-w-6xl mx-auto px-4 py-6 flex-1">
         {userEmail ? (
           <>
+            {/* Stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
               <StatCard title="Total Subscriptions" value={totalSubscriptions.toString()} colour="violet" statTextColours={statTextColours} cardBg={cardBg} cardBorder={cardBorder} />
               <StatCard title="Active Services" value={activeServices.toString()} colour="blue" statTextColours={statTextColours} cardBg={cardBg} cardBorder={cardBorder} />
               <StatCard title="Monthly Spending" value={`${monthlySpending.toFixed(2)}`} colour="emerald" statTextColours={statTextColours} cardBg={cardBg} cardBorder={cardBorder} />
               <StatCard title="Yearly Projection" value={`${yearlyProjection.toFixed(2)}`} colour="rose" statTextColours={statTextColours} cardBg={cardBg} cardBorder={cardBorder} />
             </div>
+
+            {/* Subscriptions + Upcoming */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Subscriptions List */}
               <section className={`lg:col-span-2 rounded-xl shadow-sm p-4 ${cardBg} ${cardBorder}`}>
                 <h2 className="text-lg font-semibold mb-3">Your Subscriptions</h2>
                 {subscriptions.length > 0 && (
@@ -1090,7 +1095,9 @@ export default function DashboardPage() {
                             <button onClick={() => handleEditSubscription(sub)} className={`p-2 rounded-md ${neutralButton}`} aria-label={`Edit ${sub.name}`}>
                               <Edit className="w-4 h-4" />
                             </button>
-                            <button onClick={() => handleInitiateDelete(sub)} disabled={deletingId === sub.id} className={`p-2 rounded-md ${isDark ? 'bg-rose-900/40 hover:bg-rose-900/60 text-rose-300 border border-rose-800/40' : 'bg-red-100 hover:bg-red-200 text-red-700 border border-red-300'}`} aria-label={`Delete ${sub.name}`}> <Trash2 className="w-4 h-4" /> </button>
+                            <button onClick={() => handleInitiateDelete(sub)} disabled={deletingId === sub.id} className={`p-2 rounded-md ${isDark ? 'bg-rose-900/40 hover:bg-rose-900/60 text-rose-300 border border-rose-800/40' : 'bg-red-100 hover:bg-red-200 text-red-700 border border-red-300'}`} aria-label={`Delete ${sub.name}`}>
+                              <Trash2 className="w-4 h-4" />
+                            </button>
                           </div>
                         </li>
                       );
@@ -1098,6 +1105,8 @@ export default function DashboardPage() {
                   </ul>
                 )}
               </section>
+
+              {/* Upcoming Payments */}
               <aside className={`rounded-xl shadow-sm p-4 ${cardBg} ${cardBorder}`}>
                 <h3 className="text-lg font-semibold mb-3">Upcoming Payments</h3>
                 {upcoming.length === 0 ? (
@@ -1118,12 +1127,19 @@ export default function DashboardPage() {
                       ))}
                     </ul>
                     {next30DaysSpending > 0 && (
-                      <div className={`mt-4 text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Total due next 30 days: <span className={`${isDark ? 'text-emerald-400' : 'text-green-600'} font-semibold ml-1`}>${next30DaysSpending.toFixed(2)}</span></div>
+                      <div className={`mt-4 text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                        Total due next 30 days:
+                        <span className={`${isDark ? 'text-emerald-400' : 'text-green-600'} font-semibold ml-1`}>
+                          ${next30DaysSpending.toFixed(2)}
+                        </span>
+                      </div>
                     )}
                   </>
                 )}
               </aside>
             </div>
+
+            {/* Suggestions */}
             {duplicateServices.length > 0 && (
               <div className={`mt-6 rounded-xl shadow-sm p-4 ${cardBg} ${cardBorder}`}>
                 <h3 className="text-lg font-semibold mb-3">Suggestions</h3>
@@ -1131,37 +1147,42 @@ export default function DashboardPage() {
                   <div key={name} className="mb-3 flex justify-between items-center">
                     <div>
                       <p className="text-sm font-medium">Duplicate subscriptions for {name}</p>
-                    <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>You have more than one {name} subscription. Consider cancelling duplicates.</p>
+                      <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                        You have more than one {name} subscription. Consider cancelling duplicates.
+                      </p>
                     </div>
-                    <button onClick={() => handleCancelDuplicates(name)} className={`px-3 py-1.5 rounded-md text-sm ${accentButton('rose')}`}>Cancel duplicates</button>
+                    <button onClick={() => handleCancelDuplicates(name)} className={`px-3 py-1.5 rounded-md text-sm ${accentButton('rose')}`}>
+                      Cancel duplicates
+                    </button>
                   </div>
                 ))}
               </div>
             )}
+
+            {/* Charts */}
             <div className="flex justify-end my-4">
-              <button onClick={() => setSideBySide(!sideBySide)} className={`px-4 py-2 rounded-lg transition ${accentButton('violet')}`}>Toggle Charts {sideBySide ? '(Stacked)' : '(Side-by-Side)'}</button>
+              <button onClick={() => setSideBySide(!sideBySide)} className={`px-4 py-2 rounded-lg transition ${accentButton('violet')}`}>
+                Toggle Charts {sideBySide ? '(Stacked)' : '(Side-by-Side)'}
+              </button>
             </div>
             <div className={`${sideBySide ? 'grid grid-cols-1 md:grid-cols-2 gap-6' : 'flex flex-col gap-6'}`}>
+              {/* Spending by Service */}
               <div className={`rounded-xl shadow-sm p-4 ${cardBg} ${cardBorder}`}>
                 <h3 className="text-lg font-semibold mb-3">Spending by Service</h3>
                 <div className="h-64">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={chartData} margin={{ top: 5, right: 20, bottom: 30, left: 0 }}>
-                      <defs>
-                        <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor={isDark ? '#22d3ee' : '#6366F1'} />
-                          <stop offset="100%" stopColor={isDark ? '#8b5cf6' : '#A78BFA'} />
-                        </linearGradient>
-                      </defs>
                       <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#E5E7EB'} />
                       <XAxis dataKey="name" stroke={isDark ? '#9CA3AF' : '#6B7280'} />
-                      <YAxis domain={[0, barYAxisMax]} ticks={barYAxisTicks} stroke={isDark ? '#9CA3AF' : '#6B7280'} tickFormatter={(v) => `${v}`} />
-                      <Tooltip contentStyle={{ backgroundColor: isDark ? '#111827' : '#FFFFFF', border: `1px solid ${isDark ? '#374151' : '#D1D5DB'}`, borderRadius: '0.375rem', color: isDark ? '#F3F4F6' : '#374151' }} />
-                      <Bar dataKey="amount" fill="url(#barGradient)" radius={[6, 6, 0, 0]} />
+                      <YAxis domain={[0, barYAxisMax]} ticks={barYAxisTicks} stroke={isDark ? '#9CA3AF' : '#6B7280'} />
+                      <Tooltip contentStyle={{ backgroundColor: isDark ? '#111827' : '#FFFFFF' }} />
+                      <Bar dataKey="amount" fill={isDark ? '#8b5cf6' : '#6366F1'} radius={[6, 6, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
               </div>
+
+              {/* Monthly Projection */}
               <div className={`rounded-xl shadow-sm p-4 ${cardBg} ${cardBorder}`}>
                 <h3 className="text-lg font-semibold mb-3">Monthly Projection</h3>
                 <div className="h-64">
@@ -1169,8 +1190,8 @@ export default function DashboardPage() {
                     <LineChart data={projectionData} margin={{ top: 5, right: 20, bottom: 30, left: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#E5E7EB'} />
                       <XAxis dataKey="month" stroke={isDark ? '#9CA3AF' : '#6B7280'} />
-                      <YAxis domain={[0, lineYAxisMax]} ticks={lineYAxisTicks} stroke={isDark ? '#9CA3AF' : '#6B7280'} tickFormatter={(v) => `${v}`} />
-                      <Tooltip contentStyle={{ backgroundColor: isDark ? '#111827' : '#FFFFFF', border: `1px solid ${isDark ? '#374151' : '#D1D5DB'}`, borderRadius: '0.375rem', color: isDark ? '#F3F4F6' : '#374151' }} />
+                      <YAxis domain={[0, lineYAxisMax]} ticks={lineYAxisTicks} stroke={isDark ? '#9CA3AF' : '#6B7280'} />
+                      <Tooltip contentStyle={{ backgroundColor: isDark ? '#111827' : '#FFFFFF' }} />
                       <Legend />
                       <Line type="monotone" dataKey="spending" stroke={isDark ? '#10B981' : '#047857'} strokeWidth={2} dot={{ r: 3 }} />
                     </LineChart>
@@ -1178,6 +1199,8 @@ export default function DashboardPage() {
                 </div>
               </div>
             </div>
+
+            {/* Feature Cards */}
             <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <div className={`rounded-xl shadow-sm p-4 ${cardBg} ${cardBorder}`}>
                 <h3 className="text-lg font-semibold mb-3 flex items-center gap-2"><LinkIcon className="w-5 h-5" /> Account Linking & Import</h3>
@@ -1205,6 +1228,7 @@ export default function DashboardPage() {
             </div>
           </>
         ) : (
+          // Logged out landing
           <div className="flex flex-col items-center justify-center py-20 text-center">
             <h2 className="text-2xl font-semibold mb-4">Welcome to CashDuezy</h2>
             <p className="mb-6 max-w-md">Please log in to view and manage your subscriptions. Once logged in, you can add services, track spending, and see upcoming payments.</p>
@@ -1224,6 +1248,8 @@ export default function DashboardPage() {
           </div>
         )}
       </main>
+
+      {/* ===== Footer ===== */}
       <footer className={`border-t ${isDark ? 'border-gray-800' : 'border-gray-200'} py-4 text-center text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
         <div className="flex flex-col sm:flex-row justify-center gap-4 sm:gap-6 items-center">
           <nav className="flex gap-2 sm:gap-4 items-center">
@@ -1238,6 +1264,9 @@ export default function DashboardPage() {
         </div>
         <div className="mt-2">© 2025 CashDuezy. All rights reserved.</div>
       </footer>
+
+      {/* ===== Modals ===== */}
+
       {/* Add Subscription Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
@@ -1259,18 +1288,14 @@ export default function DashboardPage() {
                 <option value="Custom">Other (custom)</option>
               </select>
               {form.name === 'Custom' && (
-  <input
-    type="text"
-    placeholder="Name of service"
-    value={customName}
-    onChange={(e) => setCustomName(e.target.value)}
-    className={`px-3 py-2 rounded-md border ${
-      isDark
-        ? 'bg-gray-800 border-gray-700 text-gray-100 placeholder-gray-400'
-        : 'bg-gray-100 border-gray-300 text-gray-800 placeholder-gray-500'
-    }`}
-  />
-)}
+                <input
+                  type="text"
+                  placeholder="Name of service"
+                  value={customName}
+                  onChange={(e) => setCustomName(e.target.value)}
+                  className={`px-3 py-2 rounded-md border ${isDark ? 'bg-gray-800 border-gray-700 text-gray-100 placeholder-gray-400' : 'bg-gray-100 border-gray-300 text-gray-800 placeholder-gray-500'}`}
+                />
+              )}
               <input type="number" placeholder="Amount" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} className={`px-3 py-2 rounded-md border ${isDark ? 'bg-gray-800 border-gray-700 text-gray-100 placeholder-gray-400' : 'bg-gray-100 border-gray-300 text-gray-800 placeholder-gray-500'}`} />
               <select value={form.cadence} onChange={(e) => setForm({ ...form, cadence: e.target.value as 'monthly' | 'yearly' })} className={`px-3 py-2 rounded-md border ${isDark ? 'bg-gray-800 border-gray-700 text-gray-100' : 'bg-gray-100 border-gray-300 text-gray-800'}`}>
                 <option value="monthly">Monthly</option>
@@ -1296,6 +1321,7 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
+
       {/* Edit Subscription Modal */}
       {isEditModalOpen && editingSubscription && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
@@ -1328,6 +1354,7 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
+
       {/* Delete Subscription Modal */}
       {isDeleteModalOpen && subscriptionToDelete && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
@@ -1344,6 +1371,7 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
+
       {/* Login Modal */}
       {isLoginOpen && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
@@ -1384,6 +1412,7 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
+
       {/* Signup Modal */}
       {isSignUpOpen && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
@@ -1433,6 +1462,7 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
+
       {/* Forgot Password Modal */}
       {isForgotOpen && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
@@ -1450,6 +1480,7 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
+
       {/* Footer Modals */}
       {activeFooterModal && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
@@ -1465,6 +1496,7 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
+
       {/* Link Modal */}
       {isLinkModalOpen && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
@@ -1481,6 +1513,7 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
+
       {/* Upload Modal */}
       {isUploadModalOpen && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
@@ -1497,6 +1530,7 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
+
       {/* Alerts Modal */}
       {isAlertsModalOpen && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
@@ -1522,6 +1556,7 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
+
       {/* Share Modal */}
       {isShareModalOpen && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
@@ -1539,6 +1574,7 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
+
       {/* Export Modal */}
       {isExportModalOpen && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
@@ -1555,6 +1591,7 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
+
       <Toaster position="top-right" />
     </div>
   );
