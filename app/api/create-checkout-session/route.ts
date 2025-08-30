@@ -2,7 +2,15 @@ import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createClient } from "@supabase/supabase-js";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);
+// ✅ Ensure env vars are loaded
+const secretKey = process.env.STRIPE_SECRET_KEY;
+if (!secretKey) {
+  throw new Error("❌ STRIPE_SECRET_KEY is not set in environment variables");
+}
+
+const stripe = new Stripe(secretKey, {
+  apiVersion: "2025-01-27",
+});
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL as string,
@@ -13,12 +21,11 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
 
-    // Make sure required env vars exist
     if (!process.env.STRIPE_PRICE_ID || !process.env.NEXT_PUBLIC_SITE_URL) {
-      throw new Error("Missing Stripe environment variables");
+      throw new Error("❌ Missing Stripe environment variables");
     }
 
-    // Try to get existing customer if possible
+    // Lookup existing customer if possible
     let customerId: string | undefined = body?.customer_id || body?.customerId;
     if (!customerId && body?.user_id) {
       try {
@@ -33,17 +40,17 @@ export async function POST(req: Request) {
           customerId = data.stripe_customer_id as string;
         }
       } catch (lookupError) {
-        console.error("Error looking up existing Stripe customer", lookupError);
+        console.error("Error looking up Stripe customer:", lookupError);
       }
     }
 
-    // Build checkout session config
+    // Build checkout session
     const sessionConfig: Stripe.Checkout.SessionCreateParams = {
       mode: "subscription",
       payment_method_types: ["card"],
       line_items: [
         {
-          price: process.env.STRIPE_PRICE_ID, // your Pro plan price
+          price: process.env.STRIPE_PRICE_ID,
           quantity: 1,
         },
       ],
@@ -59,7 +66,7 @@ export async function POST(req: Request) {
 
     const session = await stripe.checkout.sessions.create(sessionConfig);
 
-    // ✅ Save customer_id to Supabase profiles table if new
+    // Save new customer_id to Supabase
     if (!customerId && body?.user_id && session.customer) {
       try {
         const { error: updateError } = await supabase
@@ -75,21 +82,18 @@ export async function POST(req: Request) {
       }
     }
 
-    // ✅ Return the session URL so frontend can redirect instantly
+    // Return the checkout session URL
     return NextResponse.json({ url: session.url });
   } catch (err: unknown) {
-  if (err instanceof Error) {
-    console.error("Stripe error:", err.message);
+    if (err instanceof Error) {
+      console.error("Stripe error:", err.message);
+      return NextResponse.json({ error: err.message }, { status: 500 });
+    }
+
+    console.error("Stripe error (non-Error):", err);
     return NextResponse.json(
-      { error: err.message },
+      { error: "Failed to create checkout session" },
       { status: 500 }
     );
   }
-
-  console.error("Stripe error (non-Error):", err);
-  return NextResponse.json(
-    { error: "Failed to create checkout session" },
-    { status: 500 }
-  );
-}
 }
