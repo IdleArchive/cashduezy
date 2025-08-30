@@ -920,7 +920,7 @@ export default function DashboardPage() {
   const termsContent = (
     <div className="space-y-3 text-sm">
       <p>
-        These Terms of Service ("Terms") constitute a legal agreement between you ("you" or "user") and CashDuezy ("we," "us," or "our") that governs your use of the CashDuezy subscription management service. By creating an account or using our services, you agree to these Terms. If you do not agree to these Terms, do not use the service.
+  These Terms of Service (&quot;Terms&quot;) constitute a legal agreement between you (&quot;you&quot; or &quot;user&quot;) and CashDuezy (&quot;we,&quot; &quot;us,&quot; or &quot;our&quot;) that governs your use of the CashDuezy subscription management service. By creating an account or using our services, you agree to these Terms. If you do not agree to these Terms, do not use the service.
       </p>
       <p>
         <strong>Service Description.</strong> CashDuezy provides software that allows users to track subscriptions, monitor spending, view upcoming payments, and manage subscription information. We do not provide financial advice.

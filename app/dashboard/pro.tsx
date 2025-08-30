@@ -1,6 +1,6 @@
 "use client";
 
-
+import Link from "next/link";
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { loadStripe } from '@stripe/stripe-js';
@@ -20,6 +20,12 @@ const stripePromise = loadStripe(
 
 export default function ProPage() {
   const router = useRouter();
+
+  // Example: use router to redirect after upgrade success (if you want to auto-navigate)
+  const handleContinue = () => {
+    router.push("/dashboard");
+  };
+
   // Theme toggling state
   const [theme, setTheme] = useState<string>(() => {
     if (typeof window !== 'undefined') {
@@ -79,41 +85,13 @@ export default function ProPage() {
     }
   };
 
-  // Feature definitions for pro plan. Each entry contains a name and
-  // descriptions for the free and pro plans so that we can clearly
-  // differentiate the tiers. Icons are imported above and used for
-  // visual reinforcement.
   const proFeatures = [
-    {
-      name: 'Unlimited Subscriptions',
-      free: 'Up to 3 unique services',
-      pro: 'Unlimited unique services',
-    },
-    {
-      name: 'Account Linking & Import',
-      free: 'Manual entry only',
-      pro: 'Link your bank and auto‑import recurring charges',
-    },
-    {
-      name: 'Automated Cancellation',
-      free: 'Semi‑automated forms',
-      pro: 'Concierge and fully automated cancellations',
-    },
-    {
-      name: 'Alerts & Notifications',
-      free: 'Basic renewal reminders',
-      pro: 'Overspending and free trial alerts',
-    },
-    {
-      name: 'Multi‑User Sharing',
-      free: 'Single user only',
-      pro: 'Invite family and roommates with roles',
-    },
-    {
-      name: 'Data Export',
-      free: 'CSV only',
-      pro: 'CSV & PDF export with projections',
-    },
+    { name: 'Unlimited Subscriptions', free: 'Up to 3 unique services', pro: 'Unlimited unique services' },
+    { name: 'Account Linking & Import', free: 'Manual entry only', pro: 'Link your bank and auto‑import recurring charges' },
+    { name: 'Automated Cancellation', free: 'Semi‑automated forms', pro: 'Concierge and fully automated cancellations' },
+    { name: 'Alerts & Notifications', free: 'Basic renewal reminders', pro: 'Overspending and free trial alerts' },
+    { name: 'Multi‑User Sharing', free: 'Single user only', pro: 'Invite family and roommates with roles' },
+    { name: 'Data Export', free: 'CSV only', pro: 'CSV & PDF export with projections' },
   ];
 
   return (
@@ -171,6 +149,16 @@ export default function ProPage() {
           >
             Upgrade Now
           </button>
+
+          {/* Example use of router */}
+          <div className="mt-6">
+            <button
+              onClick={handleContinue}
+              className="px-6 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-500"
+            >
+              Go to Dashboard
+            </button>
+          </div>
         </div>
 
         {/* Comparison Table */}
@@ -223,7 +211,7 @@ export default function ProPage() {
       <footer className={`border-t ${isDark ? 'border-gray-800' : 'border-gray-200'} py-4 text-center text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>  
         <div className="flex flex-col sm:flex-row justify-center gap-4 sm:gap-6 items-center">
           <nav className="flex gap-2 sm:gap-4 items-center">
-            <a href="/" className="hover:underline">Dashboard</a>
+            <Link href="/" className="hover:underline">Dashboard</Link>
             <span>|</span>
             <a href="#" onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="hover:underline">Back to Top</a>
           </nav>
