@@ -5,7 +5,7 @@ import { createMiddlewareClient } from "@supabase/auth-helpers-nextjs";
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // ✅ Skip Supabase middleware for ALL email routes (more robust check)
+  // ✅ Skip Supabase middleware for ALL email routes
   if (
     pathname.includes("/api/test-email") ||
     pathname.includes("/api/send-welcome") ||
@@ -17,17 +17,13 @@ export async function middleware(req: NextRequest) {
   const res = NextResponse.next();
 
   try {
-    const supabase = createMiddlewareClient(
-      { req, res },
-      {
-        supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        supabaseKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      }
-    );
+    // ✅ No config object needed, picks up env vars automatically
+    const supabase = createMiddlewareClient({ req, res });
 
     await supabase.auth.getSession();
   } catch (err) {
     console.error("Middleware error:", err);
+    return NextResponse.next(); // ✅ Always return a valid response
   }
 
   return res;
