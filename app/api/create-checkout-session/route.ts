@@ -9,7 +9,7 @@ if (!secretKey) {
 }
 
 const stripe = new Stripe(secretKey, {
-  apiVersion: "2025-01-27",
+  apiVersion: "2025-08-27.basil",
 });
 
 const supabase = createClient(
