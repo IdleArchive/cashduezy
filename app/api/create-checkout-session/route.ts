@@ -2,9 +2,7 @@ import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createClient } from "@supabase/supabase-js";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
-  apiVersion: "2024-06-20",
-});
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL as string,
@@ -79,11 +77,19 @@ export async function POST(req: Request) {
 
     // ✅ Return the session URL so frontend can redirect instantly
     return NextResponse.json({ url: session.url });
-  } catch (err: any) {
-    console.error("Stripe error:", err);
+  } catch (err: unknown) {
+  if (err instanceof Error) {
+    console.error("Stripe error:", err.message);
     return NextResponse.json(
-      { error: err.message || "Failed to create checkout session" },
+      { error: err.message },
       { status: 500 }
     );
   }
+
+  console.error("Stripe error (non-Error):", err);
+  return NextResponse.json(
+    { error: "Failed to create checkout session" },
+    { status: 500 }
+  );
+}
 }

@@ -2,9 +2,7 @@ import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createClient } from "@supabase/supabase-js";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
-  apiVersion: "2024-06-20",
-});
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL as string,
@@ -22,8 +20,13 @@ export async function POST(req: Request) {
       sig as string,
       process.env.STRIPE_WEBHOOK_SECRET as string
     );
-  } catch (err: any) {
-    console.error("⚠️ Webhook signature error:", err.message);
+  } catch (err: unknown) {
+    if (err instanceof Error) {
+      console.error("⚠️ Webhook signature error:", err.message);
+      return NextResponse.json({ error: err.message }, { status: 400 });
+    }
+
+    console.error("⚠️ Webhook signature error (non-Error):", err);
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
   }
 
@@ -47,23 +50,24 @@ export async function POST(req: Request) {
 
       case "customer.subscription.created":
       case "customer.subscription.updated": {
-        const subscription = event.data.object as Stripe.Subscription;
-        console.log("🔄 Subscription event:", subscription.id);
+  const subscription = event.data.object as Stripe.Subscription & {
+    current_period_end: number;
+  };
+  console.log("🔄 Subscription event:", subscription.id);
 
-        if (subscription.customer) {
-          await supabase
-            .from("profiles")
-            .update({
-              subscription_status: subscription.status,
-              current_period_end: new Date(
-                subscription.current_period_end * 1000
-              ).toISOString(),
-              plan: subscription.status === "active" ? "pro" : "free",
-            })
-            .eq("stripe_customer_id", subscription.customer.toString());
-        }
-        break;
-      }
+  if (subscription.customer) {
+    await supabase
+      .from("profiles")
+      .update({
+        subscription_status: subscription.status,
+        current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+        plan: subscription.status === "active" ? "pro" : "free",
+      })
+      .eq("stripe_customer_id", subscription.customer.toString());
+  }
+  break;
+}
+
 
       case "customer.subscription.deleted": {
         const subscription = event.data.object as Stripe.Subscription;
@@ -84,8 +88,13 @@ export async function POST(req: Request) {
       default:
         console.log(`Unhandled event type: ${event.type}`);
     }
-  } catch (err) {
-    console.error("❌ Webhook handler error:", err);
+  } catch (err: unknown) {
+    if (err instanceof Error) {
+      console.error("❌ Webhook handler error:", err.message);
+      return NextResponse.json({ error: err.message }, { status: 500 });
+    }
+
+    console.error("❌ Webhook handler error (non-Error):", err);
     return NextResponse.json({ error: "Webhook processing failed" }, { status: 500 });
   }
 

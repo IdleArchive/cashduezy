@@ -48,8 +48,19 @@ export async function POST(req: Request) {
     if (error) throw error;
 
     return NextResponse.json({ success: true, mailgunId: mgResult.id });
-  } catch (err: any) {
-    console.error("Mailgun error:", err);
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+  } catch (err: unknown) {
+    if (err instanceof Error) {
+      console.error("Mailgun error:", err.message);
+      return NextResponse.json(
+        { success: false, error: err.message },
+        { status: 500 }
+      );
+    }
+
+    console.error("Mailgun error (non-Error):", err);
+    return NextResponse.json(
+      { success: false, error: "Failed to send subscription reminder" },
+      { status: 500 }
+    );
   }
 }

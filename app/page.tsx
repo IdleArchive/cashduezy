@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { LogIn, Eye, EyeOff } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import toast, { Toaster } from "react-hot-toast";
+import Image from "next/image";
 
 export default function HomePage() {
   const router = useRouter();
@@ -123,7 +124,7 @@ export default function HomePage() {
     <main className="min-h-screen bg-gray-950 text-gray-100 flex flex-col">
       {/* Hero */}
       <section className="flex flex-col items-center justify-center flex-1 text-center px-6 py-20">
-        <img src="/cashduezy_logo.png" alt="CashDuezy Logo" className="w-20 h-20 mb-6" />
+        <Image src="/cashduezy_logo.png" alt="CashDuezy Logo" width={80} height={80} className="mb-6" />
         <h1 className="text-4xl md:text-5xl font-bold mb-4">Take Control of Your Subscriptions</h1>
         <p className="text-lg text-gray-400 mb-8 max-w-xl">
           CashDuezy helps you track, manage, and save money on recurring services — all in one place.
