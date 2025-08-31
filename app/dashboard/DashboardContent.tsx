@@ -200,20 +200,19 @@ export default function DashboardContent() {
   const [isPro, setIsPro] = useState(false);
 
   // Check auth and fetch data on mount
-  useEffect(() => {
-    const checkAuth = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (user) {
-        setUserEmail(user.email ?? null);
-        await fetchData(user.id);
-      } else {
-        setLoading(false);
-      }
-    };
-    checkAuth();
-  }, []);
+useEffect(() => {
+  const run = async () => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (user) {
+      setUserEmail(user.email ?? null);
+      await fetchData(user.id);
+    }
+  };
+  run();
+}, [ready]);
+
 
   // ✅ Apply Stripe success upgrade if redirected with ?session_id=...
   useEffect(() => {
