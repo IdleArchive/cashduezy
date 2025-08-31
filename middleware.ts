@@ -4,36 +4,43 @@ import type { NextRequest } from "next/server";
 import { createMiddlewareClient } from "@supabase/auth-helpers-nextjs";
 
 export async function middleware(req: NextRequest) {
-  // Start with a mutable response (cookies set on this are allowed)
+  // Always create a response object
   const res = NextResponse.next();
 
   try {
-    // Use the middleware client; it handles cookies on `res` for you.
+    // ✅ Only pass { req, res } — do NOT pass URL/keys
     const supabase = createMiddlewareClient({ req, res });
 
-    // Touch the session so auth cookies are kept fresh (no-op if none)
+    // Get current session (if any)
     const {
       data: { session },
     } = await supabase.auth.getSession();
 
-    // Optional: protect authenticated routes
-    const path = req.nextUrl.pathname;
-    if (path.startsWith("/dashboard") && !session) {
-      const url = req.nextUrl.clone();
-      url.pathname = "/login";
-      url.searchParams.set("redirect", path);
-      return NextResponse.redirect(url);
+    const { pathname } = req.nextUrl;
+
+    // ✅ If user is NOT logged in and tries to visit dashboard → redirect to login
+    if (pathname.startsWith("/dashboard") && !session) {
+      const loginUrl = req.nextUrl.clone();
+      loginUrl.pathname = "/login";
+      loginUrl.searchParams.set("redirect", pathname); // so we know where to go back after login
+      return NextResponse.redirect(loginUrl);
+    }
+
+    // ✅ If user IS logged in and goes to /login → send them to dashboard instead
+    if (pathname.startsWith("/login") && session) {
+      const dashUrl = req.nextUrl.clone();
+      dashUrl.pathname = "/dashboard";
+      return NextResponse.redirect(dashUrl);
     }
   } catch (err) {
-    // Never throw from middleware; log and allow request to continue
     console.error("Middleware error:", err);
-    return res;
+    // Don’t block user completely if something goes wrong
   }
 
   return res;
 }
 
-// Only run on non-API/non-static paths to avoid unnecessary work
+// ✅ Middleware should run everywhere except API/static files
 export const config = {
   matcher: [
     "/((?!api|_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml).*)",
