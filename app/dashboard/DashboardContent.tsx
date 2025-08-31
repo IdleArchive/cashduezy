@@ -749,26 +749,42 @@ if (!ready) return <div>Loading...</div>; // show spinner/blank while checking
     toast.success("Logged in successfully");
   };
   // Handle signup
-  const handleSignUp = async () => {
-    setSignUpSaving(true);
-    const { email, password } = signUpForm;
-    if (!email || !password) {
-      toast.error("Please provide both email and password");
-      setSignUpSaving(false);
-      return;
-    }
-    const { data, error } = await supabase.auth.signUp({ email, password });
-    if (error || !data?.user) {
-      toast.error(error?.message || "Sign up failed");
-      setSignUpSaving(false);
-      return;
-    }
-    setUserEmail(data.user.email ?? null);
-    await fetchData(data.user.id);
-    toast.success("Account created successfully!");
-    setIsSignUpOpen(false);
+const handleSignUp = async () => {
+  setSignUpSaving(true);
+  const { email, password } = signUpForm;
+  if (!email || !password) {
+    toast.error("Please provide both email and password");
     setSignUpSaving(false);
-  };
+    return;
+  }
+
+  const { data, error } = await supabase.auth.signUp({ email, password });
+  if (error || !data?.user) {
+    toast.error(error?.message || "Sign up failed");
+    setSignUpSaving(false);
+    return;
+  }
+
+  // --- SUCCESS ---
+  setUserEmail(data.user.email ?? null);
+  await fetchData(data.user.id);
+
+  // ✅ Toast happens ONCE, right after signup succeeds
+  toast.success("Account created successfully!");
+
+  setIsSignUpOpen(false);
+  setSignUpSaving(false);
+
+  // --- REDIRECT LOGIC ---
+  const { data: sessionData } = await supabase.auth.getSession();
+  if (sessionData.session) {
+    router.push("/dashboard");
+  } else {
+    // fallback: retry if session not yet persisted
+    setTimeout(() => router.push("/dashboard"), 500);
+  }
+};
+  
   // Handle logout
   const handleLogout = async () => {
     await supabase.auth.signOut();
