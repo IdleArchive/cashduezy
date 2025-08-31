@@ -240,6 +240,13 @@ useEffect(() => {
     run();
   }, [searchParams, router]);
 
+// 🚑 Fix for Stripe back button React crash
+useEffect(() => {
+  if (document.referrer.includes("checkout.stripe.com")) {
+    window.location.replace("/dashboard");
+  }
+}, []);
+
   // Detect Pro plan status
   const checkProStatus = async () => {
     // default to free plan
