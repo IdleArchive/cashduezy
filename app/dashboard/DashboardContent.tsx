@@ -41,6 +41,24 @@ import {
 import { loadStripe } from "@stripe/stripe-js";
 import Image from "next/image";
 import type { User } from "@supabase/supabase-js";
+// ✅ NEW: session guard hook
+export function useRequireSession() {
+  const router = useRouter();
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+    supabase.auth.getSession().then(({ data }) => {
+      if (!data.session) router.replace("/"); // not logged in → home
+      else if (mounted) setReady(true);
+    });
+    return () => {
+      mounted = false;
+    };
+  }, [router]);
+
+  return ready;
+}
 
 // Replace with your publishable key from environment variables
 const stripePromise = loadStripe(
@@ -86,6 +104,8 @@ interface AlertSettingsRow {
 }
 
 export default function DashboardContent() {
+  const ready = useRequireSession();
+  if (!ready) return <div>Loading...</div>; // show spinner/blank while checking
   const router = useRouter();
   const searchParams = useSearchParams();
 
