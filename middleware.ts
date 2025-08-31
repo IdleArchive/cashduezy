@@ -34,7 +34,6 @@ export async function middleware(req: NextRequest) {
   return res;
 }
 
-// ✅ Middleware should run everywhere except API/static files
 export const config = {
   matcher: [
     "/((?!api|_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml).*)",
