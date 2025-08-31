@@ -156,12 +156,14 @@ export default function DashboardContent() {
   const [activeFooterModal, setActiveFooterModal] = useState<null | "about" | "contact" | "privacy" | "terms">(null);
 
   // Theme state
-  const [theme, setTheme] = useState<string>(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("theme") || "dark";
-    }
-    return "dark";
-  });
+const [theme, setTheme] = useState<string>("dark");
+
+useEffect(() => {
+  if (typeof window !== "undefined") {
+    setTheme(localStorage.getItem("theme") || "dark");
+  }
+}, []);
+
   useEffect(() => {
     if (typeof window !== "undefined") {
       localStorage.setItem("theme", theme);
@@ -245,7 +247,7 @@ useEffect(() => {
   if (document.referrer.includes("checkout.stripe.com")) {
     window.location.replace("/dashboard");
   }
-}, []);
+}, [router]);
 
   // Detect Pro plan status
   const checkProStatus = async () => {
@@ -1253,33 +1255,39 @@ if (!ready) return <div>Loading...</div>; // show spinner/blank while checking
               <div className={`rounded-xl shadow-sm p-4 ${cardBg} ${cardBorder}`}>
                 <h3 className="text-lg font-semibold mb-3">Spending by Service</h3>
                 <div className="h-64">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={chartData} margin={{ top: 5, right: 20, bottom: 30, left: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke={isDark ? "#374151" : "#E5E7EB"} />
-                      <XAxis dataKey="name" stroke={isDark ? "#9CA3AF" : "#6B7280"} />
-                      <YAxis domain={[0, barYAxisMax]} ticks={barYAxisTicks} stroke={isDark ? "#9CA3AF" : "#6B7280"} />
-                      <Tooltip contentStyle={{ backgroundColor: isDark ? "#111827" : "#FFFFFF" }} />
-                      <Bar dataKey="amount" fill={isDark ? "#8b5cf6" : "#6366F1"} radius={[6, 6, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
+  {ready && !loading && (
+    <ResponsiveContainer width="100%" height="100%">
+      <BarChart data={chartData} margin={{ top: 5, right: 20, bottom: 30, left: 0 }}>
+        <CartesianGrid strokeDasharray="3 3" stroke={isDark ? "#374151" : "#E5E7EB"} />
+        <XAxis dataKey="name" stroke={isDark ? "#9CA3AF" : "#6B7280"} />
+        <YAxis domain={[0, barYAxisMax]} ticks={barYAxisTicks} stroke={isDark ? "#9CA3AF" : "#6B7280"} />
+        <Tooltip contentStyle={{ backgroundColor: isDark ? "#111827" : "#FFFFFF" }} />
+        <Bar dataKey="amount" fill={isDark ? "#8b5cf6" : "#6366F1"} radius={[6, 6, 0, 0]} />
+      </BarChart>
+    </ResponsiveContainer>
+  )}
+</div>
+
               </div>
 
               {/* Monthly Projection */}
               <div className={`rounded-xl shadow-sm p-4 ${cardBg} ${cardBorder}`}>
                 <h3 className="text-lg font-semibold mb-3">Monthly Projection</h3>
                 <div className="h-64">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={projectionData} margin={{ top: 5, right: 20, bottom: 30, left: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke={isDark ? "#374151" : "#E5E7EB"} />
-                      <XAxis dataKey="month" stroke={isDark ? "#9CA3AF" : "#6B7280"} />
-                      <YAxis domain={[0, lineYAxisMax]} ticks={lineYAxisTicks} stroke={isDark ? "#9CA3AF" : "#6B7280"} />
-                      <Tooltip contentStyle={{ backgroundColor: isDark ? "#111827" : "#FFFFFF" }} />
-                      <Legend />
-                      <Line type="monotone" dataKey="spending" stroke={isDark ? "#10B981" : "#047857"} strokeWidth={2} dot={{ r: 3 }} />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
+  {ready && !loading && (
+    <ResponsiveContainer width="100%" height="100%">
+      <LineChart data={projectionData} margin={{ top: 5, right: 20, bottom: 30, left: 0 }}>
+        <CartesianGrid strokeDasharray="3 3" stroke={isDark ? "#374151" : "#E5E7EB"} />
+        <XAxis dataKey="month" stroke={isDark ? "#9CA3AF" : "#6B7280"} />
+        <YAxis domain={[0, lineYAxisMax]} ticks={lineYAxisTicks} stroke={isDark ? "#9CA3AF" : "#6B7280"} />
+        <Tooltip contentStyle={{ backgroundColor: isDark ? "#111827" : "#FFFFFF" }} />
+        <Legend />
+        <Line type="monotone" dataKey="spending" stroke={isDark ? "#10B981" : "#047857"} strokeWidth={2} dot={{ r: 3 }} />
+      </LineChart>
+    </ResponsiveContainer>
+  )}
+</div>
+
               </div>
             </div>
 
