@@ -244,10 +244,12 @@ useEffect(() => {
 
 // 🚑 Fix for Stripe back button React crash
 useEffect(() => {
-  if (typeof document !== "undefined" && document.referrer.includes("checkout.stripe.com")) {
-    router.replace("/dashboard");
+  if (typeof document !== "undefined" &&
+      document.referrer.includes("checkout.stripe.com")) {
+    window.location.replace("/dashboard"); // hard reload
   }
-}, [router]);
+}, []);
+
 
   // Detect Pro plan status
   const checkProStatus = async () => {
@@ -321,7 +323,7 @@ useEffect(() => {
     };
     loadAlertSettings();
   }, []);
-if (!ready) return <div>Loading...</div>; // show spinner/blank while checking
+
   const fetchData = async (userId: string) => {
     const { data: subs, error } = await supabase.from("subscriptions").select("*").eq("user_id", userId);
     if (error) {
@@ -331,7 +333,7 @@ if (!ready) return <div>Loading...</div>; // show spinner/blank while checking
     setSubscriptions((subs as Subscription[]) || []);
     setLoading(false);
   };
-
+if (!ready) return <div>Loading...</div>; // show spinner/blank while checking
   // Derived stats
   const totalSubscriptions = subscriptions.length;
   const activeSubscriptions = subscriptions.filter((s) => !s.cancel_url);
@@ -1568,12 +1570,18 @@ if (!ready) return <div>Loading...</div>; // show spinner/blank while checking
             </div>
             <div className="flex flex-col gap-3">
               <input
-                type="email"
-                placeholder="Email"
-                value={loginForm.email}
-                onChange={(e) => setLoginForm({ ...loginForm, email: e.target.value })}
-                className={`px-3 py-2 rounded-md border ${isDark ? "bg-gray-800 border-gray-700 text-gray-100 placeholder-gray-400" : "bg-gray-100 border-gray-300 text-gray-800 placeholder-gray-500"}`}
-              />
+  type="email"
+  placeholder="Email"
+  value={loginForm.email}
+  onChange={(e) => setLoginForm({ ...loginForm, email: e.target.value })}
+  onKeyDown={(e) => {
+    if (e.key === "Enter") {
+      handleLogin();
+    }
+  }}
+  className={`px-3 py-2 rounded-md border ${isDark ? "bg-gray-800 border-gray-700 text-gray-100" : "bg-gray-100 border-gray-300 text-gray-800"}`}
+/>
+
               <div className="relative">
                 <input
                   type={showLoginPassword ? "text" : "password"}
@@ -1640,20 +1648,39 @@ if (!ready) return <div>Loading...</div>; // show spinner/blank while checking
             </div>
             <div className="flex flex-col gap-3">
               <input
-                type="email"
-                placeholder="Email"
-                value={signUpForm.email}
-                onChange={(e) => setSignUpForm({ ...signUpForm, email: e.target.value })}
-                className={`px-3 py-2 rounded-md border ${isDark ? "bg-gray-800 border-gray-700 text-gray-100 placeholder-gray-400" : "bg-gray-100 border-gray-300 text-gray-800 placeholder-gray-500"}`}
-              />
+  type="email"
+  placeholder="Email"
+  value={signUpForm.email}
+  onChange={(e) => setSignUpForm({ ...signUpForm, email: e.target.value })}
+  onKeyDown={(e) => {
+    if (e.key === "Enter") {
+      handleSignUp();
+    }
+  }}
+  className={`px-3 py-2 rounded-md border ${
+    isDark
+      ? "bg-gray-800 border-gray-700 text-gray-100 placeholder-gray-400"
+      : "bg-gray-100 border-gray-300 text-gray-800 placeholder-gray-500"
+  }`}
+/>
+
               <div className="relative">
                 <input
-                  type={showSignUpPassword ? "text" : "password"}
-                  placeholder="Password"
-                  value={signUpForm.password}
-                  onChange={(e) => setSignUpForm({ ...signUpForm, password: e.target.value })}
-                  className={`w-full px-3 py-2 rounded-md border ${isDark ? "bg-gray-800 border-gray-700 text-gray-100 placeholder-gray-400" : "bg-gray-100 border-gray-300 text-gray-800 placeholder-gray-500"}`}
-                />
+  type={showSignUpPassword ? "text" : "password"}
+  placeholder="Password"
+  value={signUpForm.password}
+  onChange={(e) => setSignUpForm({ ...signUpForm, password: e.target.value })}
+  onKeyDown={(e) => {
+    if (e.key === "Enter") {
+      handleSignUp();
+    }
+  }}
+  className={`w-full px-3 py-2 rounded-md border ${
+    isDark
+      ? "bg-gray-800 border-gray-700 text-gray-100 placeholder-gray-400"
+      : "bg-gray-100 border-gray-300 text-gray-800 placeholder-gray-500"
+  }`}
+/>
                 <button type="button" onClick={() => setShowSignUpPassword(!showSignUpPassword)} className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700">
                   {showSignUpPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
