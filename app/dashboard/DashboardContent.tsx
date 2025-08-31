@@ -421,7 +421,7 @@ export default function DashboardContent() {
   });
   const chartData = Object.entries(aggregatedChartMap).map(([name, amount]) => ({ name, amount }));
   const maxBarValue = chartData.length ? Math.max(...chartData.map((d) => d.amount)) : 0;
-  const barYAxisMax = Math.ceil(maxBarValue / 5) * 5 || 5;
+  const barYAxisMax = Math.max(Math.ceil(maxBarValue / 5) * 5, 5);
   const barYAxisTicks = Array.from({ length: 6 }, (_, i) => (barYAxisMax / 5) * i);
 
   // Projection data
