@@ -21,42 +21,50 @@ export default function HomePage() {
   const [signUpForm, setSignUpForm] = useState({ email: "", password: "" });
   const [signUpSaving, setSignUpSaving] = useState(false);
   const [showSignUpPassword, setShowSignUpPassword] = useState(false);
-  const [isProSignup, setIsProSignup] = useState(false); // NEW: track free vs pro
+  const [isProSignup, setIsProSignup] = useState(false);
 
   // Forgot password
   const [isForgotOpen, setIsForgotOpen] = useState(false);
   const [forgotEmail, setForgotEmail] = useState("");
   const [forgotSaving, setForgotSaving] = useState(false);
 
-  // Handle login
-const handleLogin = async () => {
-  setLoginSaving(true);
-  const { email, password } = loginForm;
+  // ✅ Handle login with session check
+  const handleLogin = async () => {
+    setLoginSaving(true);
+    const { email, password } = loginForm;
 
-  if (!email || !password) {
-    toast.error("Please provide both email and password");
+    if (!email || !password) {
+      toast.error("Please provide both email and password");
+      setLoginSaving(false);
+      return;
+    }
+
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+    if (error || !data?.user) {
+      toast.error(error?.message || "Login failed");
+      setLoginSaving(false);
+      return;
+    }
+
+    toast.success("Logged in successfully");
+    setIsLoginOpen(false);
+
+    // ✅ Ensure session cookies are ready before redirect
+    setTimeout(async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (session) {
+        router.push("/dashboard");
+      } else {
+        toast.error("Session not ready. Please try again.");
+      }
+    }, 400);
+
     setLoginSaving(false);
-    return;
-  }
-
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-
-  if (error || !data?.user) {
-    toast.error(error?.message || "Login failed");
-    setLoginSaving(false);
-    return;
-  }
-
-  toast.success("Logged in successfully");
-  setIsLoginOpen(false);
-
-  // ✅ NEW: wait briefly so Supabase can write cookies
-  setTimeout(() => {
-    router.push("/dashboard");
-  }, 400);
-
-  setLoginSaving(false);
-};
+  };
 
   // Handle signup (free or pro)
   const handleSignUp = async (isPro = false) => {
@@ -85,7 +93,7 @@ const handleLogin = async () => {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             user_id: data.user.id,
-            email,       // ✅ pass email to Stripe
+            email,
             plan: "pro",
           }),
         });
