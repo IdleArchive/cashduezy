@@ -105,7 +105,6 @@ interface AlertSettingsRow {
 
 export default function DashboardContent() {
   const ready = useRequireSession();
-  if (!ready) return <div>Loading...</div>; // show spinner/blank while checking
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -313,7 +312,7 @@ useEffect(() => {
     };
     loadAlertSettings();
   }, []);
-
+if (!ready) return <div>Loading...</div>; // show spinner/blank while checking
   const fetchData = async (userId: string) => {
     const { data: subs, error } = await supabase.from("subscriptions").select("*").eq("user_id", userId);
     if (error) {
