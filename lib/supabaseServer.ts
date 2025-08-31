@@ -1,12 +1,24 @@
-﻿import { createServerComponentClient } from '@supabase/auth-helpers-nextjs'
-import { cookies } from 'next/headers'
+﻿import { createServerClient, type CookieOptions } from "@supabase/ssr";
+import { cookies } from "next/headers";
 
-export function getSupabaseServer() {
-  return createServerComponentClient(
-    { cookies },
+export async function getSupabaseServer() {
+  const cookieStore = await cookies(); // 👈 await since it's a Promise in your setup
+
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
-      supabaseUrl: "https://rycuzfjyskutskuyojym.supabase.co",
-      supabaseKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ5Y3V6Zmp5c2t1dHNrdXlvanltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYwOTQyNDMsImV4cCI6MjA3MTY3MDI0M30.QvRUxpbn3dyMx-_rNvwPO7gnc35RaVMZCiYbfCRGKSk"
+      cookies: {
+        get(name: string) {
+          return cookieStore.get(name)?.value;
+        },
+        set(name: string, value: string, options?: CookieOptions) {
+          console.warn(`Tried to set cookie "${name}" server-side, ignored.`);
+        },
+        remove(name: string, options?: CookieOptions) {
+          console.warn(`Tried to remove cookie "${name}" server-side, ignored.`);
+        },
+      },
     }
-  )
+  );
 }
