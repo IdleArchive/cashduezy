@@ -7,15 +7,8 @@ export async function middleware(req: NextRequest) {
   const res = NextResponse.next();
 
   try {
-    // ✅ Explicitly set cookie path to root
-    const supabase = createMiddlewareClient(
-      { req, res },
-      {
-        cookieOptions: {
-          path: "/", // important: avoid defaulting to /login
-        },
-      }
-    );
+    // ✅ No need for cookieOptions override, Supabase handles this automatically
+    const supabase = createMiddlewareClient({ req, res });
 
     const {
       data: { session },
