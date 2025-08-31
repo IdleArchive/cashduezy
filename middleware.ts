@@ -1,52 +1,41 @@
-﻿import { NextResponse } from "next/server";
+﻿// middleware.ts
+import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { createServerClient, type CookieOptions } from "@supabase/ssr";
+import { createMiddlewareClient } from "@supabase/auth-helpers-nextjs";
 
 export async function middleware(req: NextRequest) {
-  const { pathname } = req.nextUrl;
-
-  // Skip auth for API routes
-  if (pathname.startsWith("/api/")) {
-    return NextResponse.next();
-  }
-
-  // Start a response we can mutate (cookies, headers)
-  let res = NextResponse.next({
-    request: { headers: req.headers },
-  });
+  // Start with a mutable response (cookies set on this are allowed)
+  const res = NextResponse.next();
 
   try {
-    // Build a Supabase server client for middleware
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name: string) {
-            return req.cookies.get(name)?.value;
-          },
-          set(name: string, value: string, options: CookieOptions) {
-            // Reflect cookie changes in both request + response
-            req.cookies.set({ name, value, ...options });
-            res = NextResponse.next({ request: { headers: req.headers } });
-            res.cookies.set({ name, value, ...options });
-          },
-          remove(name: string, options: CookieOptions) {
-            req.cookies.set({ name, value: "", ...options });
-            res = NextResponse.next({ request: { headers: req.headers } });
-            res.cookies.set({ name, value: "", ...options });
-          },
-        },
-      }
-    );
+    // Use the middleware client; it handles cookies on `res` for you.
+    const supabase = createMiddlewareClient({ req, res });
 
-    // Try to read the session; don't block routing if it fails
-    await supabase.auth.getSession().catch(() => {});
+    // Touch the session so auth cookies are kept fresh (no-op if none)
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    // Optional: protect authenticated routes
+    const path = req.nextUrl.pathname;
+    if (path.startsWith("/dashboard") && !session) {
+      const url = req.nextUrl.clone();
+      url.pathname = "/login";
+      url.searchParams.set("redirect", path);
+      return NextResponse.redirect(url);
+    }
   } catch (err) {
-    console.error("Middleware execution error:", err);
-    // Fall back to continuing the request
+    // Never throw from middleware; log and allow request to continue
+    console.error("Middleware error:", err);
     return res;
   }
 
   return res;
 }
+
+// Only run on non-API/non-static paths to avoid unnecessary work
+export const config = {
+  matcher: [
+    "/((?!api|_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml).*)",
+  ],
+};
