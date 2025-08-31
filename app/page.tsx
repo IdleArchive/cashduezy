@@ -29,25 +29,34 @@ export default function HomePage() {
   const [forgotSaving, setForgotSaving] = useState(false);
 
   // Handle login
-  const handleLogin = async () => {
-    setLoginSaving(true);
-    const { email, password } = loginForm;
-    if (!email || !password) {
-      toast.error("Please provide both email and password");
-      setLoginSaving(false);
-      return;
-    }
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error || !data?.user) {
-      toast.error(error?.message || "Login failed");
-      setLoginSaving(false);
-      return;
-    }
-    toast.success("Logged in successfully");
-    setIsLoginOpen(false);
-    router.push("/dashboard");
+const handleLogin = async () => {
+  setLoginSaving(true);
+  const { email, password } = loginForm;
+
+  if (!email || !password) {
+    toast.error("Please provide both email and password");
     setLoginSaving(false);
-  };
+    return;
+  }
+
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+  if (error || !data?.user) {
+    toast.error(error?.message || "Login failed");
+    setLoginSaving(false);
+    return;
+  }
+
+  toast.success("Logged in successfully");
+  setIsLoginOpen(false);
+
+  // ✅ NEW: wait briefly so Supabase can write cookies
+  setTimeout(() => {
+    router.push("/dashboard");
+  }, 400);
+
+  setLoginSaving(false);
+};
 
   // Handle signup (free or pro)
   const handleSignUp = async (isPro = false) => {
