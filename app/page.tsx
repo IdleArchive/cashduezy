@@ -61,15 +61,15 @@ export default function HomePage() {
       } else {
         toast.error("Session not ready. Please try again.");
       }
+      setLoginSaving(false);
     }, 400);
-
-    setLoginSaving(false);
   };
 
-  // Handle signup (free or pro)
+  // ✅ Handle signup (free or pro) with session check
   const handleSignUp = async (isPro = false) => {
     setSignUpSaving(true);
     const { email, password } = signUpForm;
+
     if (!email || !password) {
       toast.error("Please provide both email and password");
       setSignUpSaving(false);
@@ -77,6 +77,7 @@ export default function HomePage() {
     }
 
     const { data, error } = await supabase.auth.signUp({ email, password });
+
     if (error || !data?.user) {
       toast.error(error?.message || "Sign up failed");
       setSignUpSaving(false);
@@ -100,7 +101,8 @@ export default function HomePage() {
 
         const { url } = await res.json();
         if (url) {
-          window.location.href = url; // redirect to Stripe checkout
+          // Stripe takes over — no dashboard redirect here
+          window.location.href = url;
           return;
         }
       } catch (err) {
@@ -108,9 +110,19 @@ export default function HomePage() {
       }
     }
 
-    // fallback: free users or Stripe error → dashboard
-    router.push("/dashboard");
-    setSignUpSaving(false);
+    // ✅ Free users (or Stripe error): wait for cookies, then redirect
+    setTimeout(async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (session) {
+        router.push("/dashboard");
+      } else {
+        toast.error("Session not ready. Please try again.");
+      }
+      setSignUpSaving(false);
+    }, 400);
   };
 
   // Handle forgot password
@@ -386,7 +398,7 @@ export default function HomePage() {
                 Cancel
               </button>
               <button
-                onClick={handleForgotPassword}
+                onClick={() => handleForgotPassword()}
                 disabled={forgotSaving}
                 className="px-4 py-2 rounded-md bg-violet-600 hover:bg-violet-500"
               >
