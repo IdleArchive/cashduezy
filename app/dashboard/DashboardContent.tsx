@@ -1,4 +1,3 @@
-// app/dashboard/DashboardContent.tsx
 "use client";
 
 import { useEffect, useState, useRef, ChangeEvent } from "react";
@@ -21,7 +20,6 @@ import {
   UserPlus,
   Eye,
   EyeOff,
-  // extra icons for feature showcase
   List as ListIcon,
   PieChart as PieChartIcon,
   AlertTriangle as AlertTriangleIcon,
@@ -44,7 +42,6 @@ import { loadStripe } from "@stripe/stripe-js";
 import Image from "next/image";
 import type { User } from "@supabase/supabase-js";
 
-function DashboardContent() {
 // Replace with your publishable key from environment variables
 const stripePromise = loadStripe(
   process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY as string
@@ -88,7 +85,7 @@ interface AlertSettingsRow {
   overspending_threshold?: number;
 }
 
-function DashboardPage() {
+export default function DashboardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -1860,6 +1857,7 @@ function DashboardPage() {
   );
 }
 
+// Stat card helper
 interface StatCardProps {
   title: string;
   value: string;
@@ -1876,5 +1874,4 @@ function StatCard({ title, value, colour, statTextColours, cardBg, cardBorder }:
       <span className="text-sm text-gray-500 dark:text-gray-400">{title}</span>
     </div>
   );
-}
 }

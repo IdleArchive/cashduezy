@@ -1,6 +1,6 @@
 ﻿import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { createMiddlewareClient } from "@supabase/auth-helpers-nextjs";
+import { createMiddlewareClient } from "@supabase/ssr"; // ✅ NEW import
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -13,6 +13,7 @@ export async function middleware(req: NextRequest) {
   const res = NextResponse.next();
 
   try {
+    // ✅ Use @supabase/ssr version
     const supabase = createMiddlewareClient({ req, res });
 
     // Just attempt to fetch session; don’t block or throw
