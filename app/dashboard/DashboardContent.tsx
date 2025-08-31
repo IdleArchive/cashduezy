@@ -244,8 +244,8 @@ useEffect(() => {
 
 // 🚑 Fix for Stripe back button React crash
 useEffect(() => {
-  if (document.referrer.includes("checkout.stripe.com")) {
-    window.location.replace("/dashboard");
+  if (typeof document !== "undefined" && document.referrer.includes("checkout.stripe.com")) {
+    router.replace("/dashboard");
   }
 }, [router]);
 
