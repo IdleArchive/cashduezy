@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://cashduezy.com/sitemap.xml
+Sitemap: https://www.cashduezy.com/sitemap.xml
