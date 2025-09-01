@@ -6,11 +6,11 @@ import { useRouter } from "next/navigation";
 import { CheckCircle2, XCircle, Loader2 } from "lucide-react";
 import toast from "react-hot-toast";
 
-export default function ProPage() {
+export default function PricingPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
 
-  // ✅ Stripe upgrade
+  // ✅ Stripe upgrade handler
   const handleUpgrade = async () => {
     try {
       setIsLoading(true);
@@ -25,7 +25,7 @@ export default function ProPage() {
       });
       const data = await res.json();
       if (data?.url) {
-        window.location.href = data.url; // Stripe checkout
+        window.location.href = data.url; // Stripe checkout redirect
       } else {
         toast.error("Failed to get checkout URL");
         setIsLoading(false);
@@ -51,33 +51,30 @@ export default function ProPage() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-800 dark:text-gray-100">
       {/* Hero */}
-      <section className="max-w-5xl mx-auto px-6 text-center py-16">
-        <h2 className="text-3xl md:text-4xl font-bold mb-4">
-          Level Up Your Subscription Management
-        </h2>
+      <section className="max-w-4xl mx-auto px-6 text-center py-20">
+        <h1 className="text-4xl md:text-5xl font-bold mb-4">
+          Simple Pricing, Powerful Results
+        </h1>
         <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto mb-8">
-          Unlock the full power of CashDuezy with our Pro plan. Link bank accounts,
-          automate cancellations, get intelligent alerts, invite family members,
-          and export detailed reports.
+          Start free. Upgrade anytime for unlimited subscriptions, automated cancellations, advanced alerts, and more.
         </p>
-
-        <div className="flex items-center justify-center gap-4">
+        <div className="flex justify-center gap-4">
           <button
             onClick={handleUpgrade}
             disabled={isLoading}
-            className={`px-8 py-3 rounded-lg text-lg font-medium inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white ${isLoading ? "opacity-70 cursor-not-allowed" : ""}`}
+            className={`px-10 py-4 rounded-lg text-lg font-semibold inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white shadow-md ${isLoading ? "opacity-70 cursor-not-allowed" : ""}`}
           >
             {isLoading ? (
               <>
                 <Loader2 className="w-5 h-5 animate-spin" /> Processing…
               </>
             ) : (
-              "Upgrade Now"
+              "Upgrade to Pro – $5/month"
             )}
           </button>
           <button
             onClick={goDashboard}
-            className="px-6 py-3 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-lg font-medium"
+            className="px-8 py-4 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-lg font-semibold"
           >
             Go to Dashboard
           </button>
@@ -87,9 +84,9 @@ export default function ProPage() {
       {/* Pricing Cards */}
       <section className="bg-gray-100 dark:bg-gray-900 py-20">
         <div className="max-w-5xl mx-auto px-6 text-center">
-          <h2 className="text-3xl font-bold mb-4">Pricing</h2>
+          <h2 className="text-3xl font-bold mb-4">Choose Your Plan</h2>
           <p className="text-gray-600 dark:text-gray-400 mb-12">
-            Start free today. Upgrade to Pro anytime for more power and flexibility.
+            CashDuezy is free to start. Upgrade to Pro for the tools you need to save serious money and take control.
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -97,7 +94,7 @@ export default function ProPage() {
             <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl p-8 flex flex-col">
               <h3 className="text-2xl font-semibold mb-2">Free</h3>
               <p className="text-gray-600 dark:text-gray-400 mb-6">
-                Get started with essential features.
+                Essential tools to start managing subscriptions.
               </p>
               <ul className="text-left space-y-3 mb-8">
                 <li>✅ Track up to 3 subscriptions</li>
@@ -106,22 +103,25 @@ export default function ProPage() {
                 <li>❌ No advanced analytics</li>
               </ul>
               <Link
-                href="/"
+                href="/login"
                 className="mt-auto px-6 py-3 rounded-lg bg-violet-600 hover:bg-violet-500 text-white font-medium text-center"
               >
-                Get Started
+                Get Started Free
               </Link>
             </div>
 
             {/* Pro Plan */}
-            <div className="bg-white dark:bg-gray-900 border border-violet-600 rounded-2xl p-8 flex flex-col shadow-lg">
+            <div className="bg-white dark:bg-gray-900 border-2 border-emerald-600 rounded-2xl p-8 flex flex-col shadow-xl">
               <h3 className="text-2xl font-semibold mb-2">Pro</h3>
-              <p className="text-gray-600 dark:text-gray-400 mb-6">Unlock unlimited power.</p>
+              <p className="text-gray-600 dark:text-gray-400 mb-6">
+                Unlock unlimited power and automation.
+              </p>
               <ul className="text-left space-y-3 mb-8">
                 <li>✅ Unlimited subscriptions</li>
-                <li>✅ Advanced spending analytics</li>
-                <li>✅ Priority renewal reminders</li>
-                <li>✅ Access to upcoming features first</li>
+                <li>✅ Advanced analytics</li>
+                <li>✅ Automated cancellations</li>
+                <li>✅ Priority renewal alerts</li>
+                <li>✅ Multi-user sharing</li>
               </ul>
               <button
                 onClick={handleUpgrade}
@@ -131,15 +131,16 @@ export default function ProPage() {
                 {isLoading ? "Processing…" : "Upgrade to Pro – $5/month"}
               </button>
               <p className="text-sm text-gray-600 dark:text-gray-400 mt-3">
-                Cancel anytime. Zero hassle, no hidden fees.
+                Cancel anytime. No hidden fees.
               </p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Comparison Table */}
+      {/* Feature Comparison */}
       <section className="max-w-6xl mx-auto px-6 py-16">
+        <h2 className="text-3xl font-bold text-center mb-10">Compare Plans</h2>
         <div className="overflow-x-auto shadow-sm rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800">
           <table className="min-w-full text-sm">
             <thead className="bg-gray-100 dark:bg-gray-800">
@@ -153,17 +154,13 @@ export default function ProPage() {
               {proFeatures.map((feat) => (
                 <tr key={feat.name}>
                   <td className="px-4 py-3 font-medium">{feat.name}</td>
-                  <td className="px-4 py-3">
-                    <div className="flex justify-center items-center gap-2">
-                      <XCircle className="w-4 h-4 text-rose-500" />
-                      <span>{feat.free}</span>
-                    </div>
+                  <td className="px-4 py-3 text-center">
+                    <XCircle className="w-4 h-4 text-rose-500 inline-block mr-1" />
+                    {feat.free}
                   </td>
-                  <td className="px-4 py-3">
-                    <div className="flex justify-center items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                      <span>{feat.pro}</span>
-                    </div>
+                  <td className="px-4 py-3 text-center">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-500 inline-block mr-1" />
+                    {feat.pro}
                   </td>
                 </tr>
               ))}
@@ -172,20 +169,67 @@ export default function ProPage() {
         </div>
       </section>
 
+      {/* FAQ Section */}
+      <section className="bg-gray-50 dark:bg-gray-950 py-20 px-6">
+        <div className="max-w-4xl mx-auto">
+          <h2 className="text-3xl font-bold text-center mb-8">Frequently Asked Questions</h2>
+          <div className="space-y-6 text-gray-700 dark:text-gray-300">
+            <div>
+              <h3 className="font-semibold mb-2">Can I cancel anytime?</h3>
+              <p>Yes, you can cancel your Pro subscription at any time. There are no hidden fees or long-term commitments.</p>
+            </div>
+            <div>
+              <h3 className="font-semibold mb-2">What payment methods do you support?</h3>
+              <p>We support all major credit and debit cards through Stripe’s secure checkout.</p>
+            </div>
+            <div>
+              <h3 className="font-semibold mb-2">Will I lose my data if I downgrade?</h3>
+              <p>No, your subscriptions and spending history remain saved. You’ll just lose access to Pro-only features.</p>
+            </div>
+            <div>
+              <h3 className="font-semibold mb-2">Is my information secure?</h3>
+              <p>Absolutely. CashDuezy uses bank-level encryption and never stores sensitive payment credentials directly.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials Section */}
+      <section className="bg-gray-100 dark:bg-gray-900 py-20 px-6">
+        <div className="max-w-5xl mx-auto text-center">
+          <h2 className="text-3xl font-bold mb-10">Loved by Smart Savers</h2>
+          <div className="grid md:grid-cols-3 gap-8 text-gray-700 dark:text-gray-300">
+            <div className="p-6 bg-white dark:bg-gray-800 rounded-xl shadow-md">
+              “CashDuezy saved me over $200 in the first month by catching forgotten subscriptions.”
+              <div className="mt-3 font-semibold">– Alex R.</div>
+            </div>
+            <div className="p-6 bg-white dark:bg-gray-800 rounded-xl shadow-md">
+              “The automated cancellation feature is a game changer. Worth every penny.”
+              <div className="mt-3 font-semibold">– Jamie L.</div>
+            </div>
+            <div className="p-6 bg-white dark:bg-gray-800 rounded-xl shadow-md">
+              “I love being able to share with my family. We’re all on the same page with bills now.”
+              <div className="mt-3 font-semibold">– Morgan S.</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Final CTA */}
-      <section className="text-center pb-16 px-6">
-        <p className="text-lg mb-4">Ready to experience CashDuezy Pro?</p>
+      <section className="text-center pb-20 px-6">
+        <h2 className="text-3xl font-bold mb-4">Ready to experience CashDuezy Pro?</h2>
+        <p className="text-lg mb-6">Start saving money, cutting waste, and staying in control of your subscriptions today.</p>
         <button
           onClick={handleUpgrade}
           disabled={isLoading}
-          className={`px-8 py-3 rounded-lg text-lg font-medium inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white ${isLoading ? "opacity-70 cursor-not-allowed" : ""}`}
+          className={`px-10 py-4 rounded-lg text-lg font-semibold inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white shadow-md ${isLoading ? "opacity-70 cursor-not-allowed" : ""}`}
         >
           {isLoading ? (
             <>
               <Loader2 className="w-5 h-5 animate-spin" /> Processing…
             </>
           ) : (
-            "Upgrade to Pro"
+            "Upgrade Now"
           )}
         </button>
         <div className="mt-4 text-sm text-gray-600 dark:text-gray-500">

@@ -46,11 +46,7 @@ export default function DashboardPageWrapper() {
 
   // --- Redirecting state ---
   if (!loggedIn) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950 text-gray-700 dark:text-gray-200">
-        Redirecting...
-      </div>
-    );
+    return null; // ✅ Don’t show a fake page
   }
 
   // --- Dashboard with custom header + content ---

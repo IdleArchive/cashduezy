@@ -41,6 +41,7 @@ import {
 import { loadStripe } from "@stripe/stripe-js";
 import Image from "next/image";
 import type { User } from "@supabase/supabase-js";
+import Link from "next/link";
 // ✅ NEW: session guard hook
 export function useRequireSession() {
   const router = useRouter();
@@ -792,6 +793,9 @@ const handleSignUp = async () => {
     setSubscriptions([]);
     setIsPro(false);
     toast.success("Logged out");
+
+      // 🚪 Send them back to homepage
+    router.push("/");
   };
   // Feature handlers
   const handleLinkBank = () => {
@@ -1073,14 +1077,22 @@ const handleSignUp = async () => {
               </div>
             )}
             {/* Upgrade only when not Pro */}
-            {userEmail && !isPro && (
-              <div className="flex items-center gap-2">
-                <button onClick={handleUpgrade} className={`px-3 py-1.5 rounded-md text-sm whitespace-nowrap ${accentButton("emerald")}`}>
-                  Upgrade to Pro
-                </button>
-                <span className={`text-sm ${isDark ? "text-gray-400" : "text-gray-500"} italic`}>Upgrade to Pro — only $5/month</span>
-              </div>
-            )}
+
+{userEmail && !isPro && (
+  <div className="flex items-center gap-2">
+    <Link
+      href="/pricing"
+      className={`px-3 py-1.5 rounded-md text-sm whitespace-nowrap ${accentButton("emerald")}`}
+    >
+      Upgrade to Pro
+    </Link>
+    <span
+      className={`text-sm ${isDark ? "text-gray-400" : "text-gray-500"} italic`}
+    >
+      Upgrade to Pro — only $5/month
+    </span>
+  </div>
+)}
             {userEmail && (
               <button onClick={() => setIsModalOpen(true)} className={`px-3 py-1.5 rounded-md text-sm flex items-center gap-1 ${accentButton("violet")}`}>
                 <Plus className="w-4 h-4" /> Add
