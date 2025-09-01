@@ -343,6 +343,30 @@ const checkProStatus = async () => {
     loadAlertSettings();
   }, []);
 
+  // 🔔 Renewal banner reminders (Pro only, respects alert settings)
+useEffect(() => {
+  if (!isPro || !alertSettings.renewal || subscriptions.length === 0) return;
+
+  const today = new Date();
+
+  subscriptions.forEach((sub) => {
+    const next = computeNextRenewal(sub);
+    if (!next) return;
+    const diffDays = Math.ceil((next.getTime() - today.getTime()) / 86400000);
+
+    if (diffDays > 0 && diffDays <= 2) {
+      const key = `${sub.id}-${diffDays}`;
+      if (!sessionStorage.getItem(key)) {
+        toast.success(
+          `Reminder: ${sub.name} renews in ${diffDays} day${diffDays > 1 ? "s" : ""}`,
+          { duration: 10000 }
+        );
+        sessionStorage.setItem(key, "shown");
+      }
+    }
+  });
+}, [subscriptions, isPro, alertSettings.renewal]);
+
   const fetchData = async (userId: string) => {
     const { data: subs, error } = await supabase.from("subscriptions").select("*").eq("user_id", userId);
     if (error) {
@@ -351,19 +375,6 @@ const checkProStatus = async () => {
     }
     setSubscriptions((subs as Subscription[]) || []);
 setLoading(false);
-
-// 🔔 Pro-only banner reminders
-if (isPro) {
-  const today = new Date();
-  (subs as Subscription[]).forEach((sub) => {
-    const next = computeNextRenewal(sub);
-    if (!next) return;
-    const diffDays = Math.ceil((next.getTime() - today.getTime()) / 86400000);
-    if (diffDays > 0 && diffDays <= 2) {
-      toast.success(`Reminder: ${sub.name} renews in ${diffDays} day${diffDays > 1 ? "s" : ""}`);
-    }
-  });
-}
 
   };
 if (!ready) return <div>Loading...</div>; // show spinner/blank while checking
@@ -473,7 +484,7 @@ if (!ready) return <div>Loading...</div>; // show spinner/blank while checking
   });
   const upcoming: UpcomingItem[] = Object.values(upcomingGrouped)
     .sort((a, b) => a.next.getTime() - b.next.getTime())
-    .slice(0, 3);
+    .slice(0, isPro ? undefined : 3);
 
   // Chart data - aggregate same‑name services
   const aggregatedChartMap: Record<string, number> = {};
