@@ -1192,7 +1192,8 @@ const handleSignUp = async () => {
 {userEmail ? (
 <div className="flex items-center justify-end gap-3">
   {/* Avatar with initial */}
-  <UserAvatar email={userEmail} size={32} />
+<UserAvatar email={userEmail} isPro={isPro} size={32} />
+
 
 
   {/* User email */}
