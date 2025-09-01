@@ -13,6 +13,21 @@ const nextConfig: NextConfig = {
   // images: {
   //   domains: ["images.unsplash.com", "your-cdn.com"],
   // },
+
+  // ✅ Force correct Content-Type for sitemap.xml
+  async headers() {
+    return [
+      {
+        source: "/sitemap.xml",
+        headers: [
+          {
+            key: "Content-Type",
+            value: "application/xml",
+          },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;
