@@ -42,6 +42,7 @@ import { loadStripe } from "@stripe/stripe-js";
 import Image from "next/image";
 import type { User } from "@supabase/supabase-js";
 import Link from "next/link";
+import UserAvatar from "@/components/UserAvatar";
 // ✅ NEW: session guard hook
 const DEV_EMAIL = process.env.NEXT_PUBLIC_DEV_EMAIL;
 export function useRequireSession() {
@@ -1188,49 +1189,74 @@ const handleSignUp = async () => {
                 </div>
               )}
             </div>
-            {userEmail ? (
-  <div className="flex items-center gap-2">
-    <span className="hidden sm:block text-sm">{userEmail}</span>
+{userEmail ? (
+<div className="flex items-center justify-end gap-3">
+  {/* Avatar with initial */}
+  <UserAvatar email={userEmail} size={32} />
 
-    {/* 🔑 Dev-only Pro toggle */}
-    {process.env.NODE_ENV !== "production" && userEmail === DEV_EMAIL && (
-  <button
-    onClick={async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      const { error } = await supabase
-        .from("user_flags")
-        .upsert({ user_id: user.id, is_pro: !isPro });
-      if (!error) {
-        setIsPro(!isPro);
-        toast.success(`Dev toggle: Pro ${!isPro ? "enabled" : "disabled"}`);
-      }
-    }}
-    className={`px-2 py-1 rounded-md text-xs ${
-      isPro
-        ? "bg-emerald-600 hover:bg-emerald-500 text-white"
-        : "bg-gray-700 hover:bg-gray-600 text-gray-200"
-    }`}
+
+  {/* User email */}
+  <span className="hidden sm:block text-sm text-gray-300">{userEmail}</span>
+
+  {/* Dev-only toggle */}
+  {process.env.NODE_ENV !== "production" && userEmail === DEV_EMAIL && (
+    <button
+      onClick={async () => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        const { error } = await supabase
+          .from("user_flags")
+          .upsert({ user_id: user.id, is_pro: !isPro });
+        if (!error) {
+          setIsPro(!isPro);
+          toast.success(`Dev toggle: Pro ${!isPro ? "enabled" : "disabled"}`);
+        }
+      }}
+      className={`px-3 py-1 rounded-lg text-xs font-medium ${
+        isPro
+          ? "bg-emerald-600 hover:bg-emerald-500 text-white"
+          : "bg-gray-700 hover:bg-gray-600 text-gray-200"
+      }`}
+    >
+      Dev: {isPro ? "Pro ON" : "Pro OFF"}
+    </button>
+  )}
+
+  {/* Profile link */}
+  <Link
+    href="/dashboard/profile"
+    className="px-3 py-1.5 rounded-lg text-sm font-medium bg-gray-800 hover:bg-gray-700 text-gray-200"
   >
-    Dev: {isPro ? "Pro ON" : "Pro OFF"}
-  </button>
-)}
+    Profile
+  </Link>
 
-    <button onClick={handleLogout} className={`p-2 rounded-md ${neutralButton}`} aria-label="Logout">
-      <LogOut className="w-4 h-4" />
+  {/* Logout */}
+  <button
+    onClick={handleLogout}
+    className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-200"
+    aria-label="Logout"
+  >
+    <LogOut className="w-5 h-5" />
+  </button>
+</div>
+) : (
+  <div className="flex items-center gap-2">
+    <button
+      onClick={() => setIsLoginOpen(true)}
+      className={`p-2 rounded-md ${neutralButton}`}
+      aria-label="Login"
+    >
+      <LogIn className="w-4 h-4" /> Log In
+    </button>
+    <button
+      onClick={() => setIsSignUpOpen(true)}
+      className={`p-2 rounded-md ${accentButton("violet")}`}
+      aria-label="Sign Up"
+    >
+      <UserPlus className="w-4 h-4" /> Sign Up
     </button>
   </div>
-) : (
-              // When not logged in, show both login and signup buttons
-              <div className="flex items-center gap-2">
-                <button onClick={() => setIsLoginOpen(true)} className={`p-2 rounded-md ${neutralButton}`} aria-label="Login">
-                  <LogIn className="w-4 h-4" /> Log In
-                </button>
-                <button onClick={() => setIsSignUpOpen(true)} className={`p-2 rounded-md ${accentButton("violet")}`} aria-label="Sign Up">
-                  <UserPlus className="w-4 h-4" /> Sign Up
-                </button>
-              </div>
-            )}
+)}
           </div>
         </div>
       </header>
