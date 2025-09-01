@@ -354,7 +354,7 @@ useEffect(() => {
     if (!next) return;
     const diffDays = Math.ceil((next.getTime() - today.getTime()) / 86400000);
 
-    if (diffDays > 0 && diffDays <= 2) {
+    if (diffDays > 0 && diffDays <= 5) {
       const key = `${sub.id}-${diffDays}`;
       if (!sessionStorage.getItem(key)) {
         toast.success(
@@ -367,16 +367,23 @@ useEffect(() => {
   });
 }, [subscriptions, isPro, alertSettings.renewal]);
 
-  const fetchData = async (userId: string) => {
-    const { data: subs, error } = await supabase.from("subscriptions").select("*").eq("user_id", userId);
-    if (error) {
-      console.error(error.message);
-      toast.error("Failed to load subscriptions");
-    }
-    setSubscriptions((subs as Subscription[]) || []);
-setLoading(false);
+const fetchData = async (userId: string) => {
+  const { data: subs, error } = await supabase
+    .from("subscriptions")
+    .select("*")
+    .eq("user_id", userId);
 
-  };
+  if (error) {
+    console.error(error.message);
+    toast.error("Failed to load subscriptions");
+  }
+
+  setSubscriptions((subs as Subscription[]) || []);
+  setLoading(false);
+
+  return (subs as Subscription[]) ?? [];  // 👈 add this return
+};
+
 if (!ready) return <div>Loading...</div>; // show spinner/blank while checking
   // Derived stats
   const totalSubscriptions = subscriptions.length;
@@ -435,6 +442,30 @@ if (!ready) return <div>Loading...</div>; // show spinner/blank while checking
     if (!start) return null;
     return nextCycleAfter(start, s.cadence ?? "monthly");
   };
+  // 🔔 Trigger toast reminders for upcoming renewals
+function showRenewalReminders(subs: Subscription[]) {
+  if (!subs || subs.length === 0) return;
+
+  const today = new Date();
+
+  subs.forEach((sub) => {
+    const next = computeNextRenewal(sub);
+    if (!next) return;
+
+    const diffDays = Math.ceil((next.getTime() - today.getTime()) / 86400000);
+
+    if (diffDays > 0 && diffDays <= 5) {
+      const key = `${sub.id}-${diffDays}`;
+      if (!sessionStorage.getItem(key)) {
+        toast.success(
+          `Reminder: ${sub.name} renews in ${diffDays} day${diffDays > 1 ? "s" : ""}`,
+          { duration: 10000 }
+        );
+        sessionStorage.setItem(key, "shown");
+      }
+    }
+  });
+}
   const renewalMeta = (s: Subscription) => {
     const next = computeNextRenewal(s);
     if (!next) return { next: null as Date | null, dueLabel: "—", isOverdue: false };
@@ -788,7 +819,8 @@ if (!ready) return <div>Loading...</div>; // show spinner/blank while checking
     }
     setUserEmail(data.user.email ?? null);
     setIsLoginOpen(false);
-    await fetchData(data.user.id);
+    const subs = await fetchData(data.user.id); // ✅ fetch + return subscriptions
+    showRenewalReminders(subs);                 // ✅ trigger renewal toasts
     setLoginSaving(false);
     toast.success("Logged in successfully");
   };
