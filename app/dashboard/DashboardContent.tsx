@@ -43,9 +43,11 @@ import Image from "next/image";
 import type { User } from "@supabase/supabase-js";
 import Link from "next/link";
 // ✅ NEW: session guard hook
+const DEV_EMAIL = process.env.NEXT_PUBLIC_DEV_EMAIL;
 export function useRequireSession() {
   const router = useRouter();
   const [ready, setReady] = useState(false);
+  
 
   useEffect(() => {
     let mounted = true;
@@ -253,45 +255,61 @@ useEffect(() => {
 
 
   // Detect Pro plan status
-  const checkProStatus = async () => {
-    // default to free plan
-    setIsPro(false);
+const checkProStatus = async () => {
+  setIsPro(false); // default free
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return;
+    let pro = false;
+
+    // 🔑 Check dev-only user_flags override first
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) return;
-      let pro = false;
+      const { data: flag } = await supabase
+        .from("user_flags")
+        .select("is_pro")
+        .eq("user_id", user.id)
+        .maybeSingle();
 
-      // Check user metadata for plan flags (strongly typed, no 'any')
-      const um = (user as User | null)?.user_metadata as UserMeta | undefined;
-      const am = (user as User | null)?.app_metadata as UserMeta | undefined;
-
-      if (um?.isPro || um?.plan === "pro" || am?.isPro || am?.plan === "pro") {
-        pro = true;
+      if (flag?.is_pro) {
+        setIsPro(true);
+        return; // skip rest, override
       }
-
-      // Optionally check a common Stripe subscription table if the above did not indicate Pro
-      if (!pro) {
-        try {
-          const { data, error } = await supabase
-            .from("stripe_subscriptions")
-            .select("status")
-            .eq("user_id", user.id)
-            .maybeSingle();
-          const sub = (data as StripeSubscriptionRow | null) ?? null;
-          if (!error && sub?.status && ["trialing", "active", "past_due"].includes(sub.status)) {
-            pro = true;
-          }
-        } catch {
-          // ignore table absence
-        }
-      }
-      setIsPro(pro);
     } catch {
-      // ignore
+      // ignore if table missing
     }
-  };
+
+    // Fallback: metadata flags
+    const um = (user as User | null)?.user_metadata as UserMeta | undefined;
+    const am = (user as User | null)?.app_metadata as UserMeta | undefined;
+
+    if (um?.isPro || um?.plan === "pro" || am?.isPro || am?.plan === "pro") {
+      pro = true;
+    }
+
+    // Fallback: Stripe subs
+    if (!pro) {
+      try {
+        const { data, error } = await supabase
+          .from("stripe_subscriptions")
+          .select("status")
+          .eq("user_id", user.id)
+          .maybeSingle();
+        const sub = (data as StripeSubscriptionRow | null) ?? null;
+        if (!error && sub?.status && ["trialing", "active", "past_due"].includes(sub.status)) {
+          pro = true;
+        }
+      } catch {
+        // ignore
+      }
+    }
+
+    setIsPro(pro);
+  } catch {
+    // ignore
+  }
+};
 
   // Re-check Pro when user changes
   useEffect(() => {
@@ -332,7 +350,21 @@ useEffect(() => {
       toast.error("Failed to load subscriptions");
     }
     setSubscriptions((subs as Subscription[]) || []);
-    setLoading(false);
+setLoading(false);
+
+// 🔔 Pro-only banner reminders
+if (isPro) {
+  const today = new Date();
+  (subs as Subscription[]).forEach((sub) => {
+    const next = computeNextRenewal(sub);
+    if (!next) return;
+    const diffDays = Math.ceil((next.getTime() - today.getTime()) / 86400000);
+    if (diffDays > 0 && diffDays <= 2) {
+      toast.success(`Reminder: ${sub.name} renews in ${diffDays} day${diffDays > 1 ? "s" : ""}`);
+    }
+  });
+}
+
   };
 if (!ready) return <div>Loading...</div>; // show spinner/blank while checking
   // Derived stats
@@ -1114,13 +1146,38 @@ const handleSignUp = async () => {
               )}
             </div>
             {userEmail ? (
-              <div className="flex items-center gap-2">
-                <span className="hidden sm:block text-sm">{userEmail}</span>
-                <button onClick={handleLogout} className={`p-2 rounded-md ${neutralButton}`} aria-label="Logout">
-                  <LogOut className="w-4 h-4" />
-                </button>
-              </div>
-            ) : (
+  <div className="flex items-center gap-2">
+    <span className="hidden sm:block text-sm">{userEmail}</span>
+
+    {/* 🔑 Dev-only Pro toggle */}
+    {process.env.NODE_ENV !== "production" && userEmail === DEV_EMAIL && (
+  <button
+    onClick={async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { error } = await supabase
+        .from("user_flags")
+        .upsert({ user_id: user.id, is_pro: !isPro });
+      if (!error) {
+        setIsPro(!isPro);
+        toast.success(`Dev toggle: Pro ${!isPro ? "enabled" : "disabled"}`);
+      }
+    }}
+    className={`px-2 py-1 rounded-md text-xs ${
+      isPro
+        ? "bg-emerald-600 hover:bg-emerald-500 text-white"
+        : "bg-gray-700 hover:bg-gray-600 text-gray-200"
+    }`}
+  >
+    Dev: {isPro ? "Pro ON" : "Pro OFF"}
+  </button>
+)}
+
+    <button onClick={handleLogout} className={`p-2 rounded-md ${neutralButton}`} aria-label="Logout">
+      <LogOut className="w-4 h-4" />
+    </button>
+  </div>
+) : (
               // When not logged in, show both login and signup buttons
               <div className="flex items-center gap-2">
                 <button onClick={() => setIsLoginOpen(true)} className={`p-2 rounded-md ${neutralButton}`} aria-label="Login">

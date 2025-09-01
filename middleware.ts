@@ -7,7 +7,6 @@ export async function middleware(req: NextRequest) {
   const res = NextResponse.next();
 
   try {
-    // Initialize normally (no cookieOptions override needed)
     const supabase = createMiddlewareClient({ req, res });
     const {
       data: { session },
@@ -23,8 +22,7 @@ export async function middleware(req: NextRequest) {
     }
 
     // NOTE: We intentionally do NOT block /dashboard here.
-    // Let the page guard handle unauthenticated users to avoid
-    // race conditions while Supabase is still writing cookies.
+    // Let the page guard handle unauthenticated users to avoid race conditions.
   } catch (err) {
     console.error("Middleware error:", err);
   }
@@ -32,9 +30,9 @@ export async function middleware(req: NextRequest) {
   return res;
 }
 
-// Run on all routes except API/static assets
+// ✅ Run middleware on everything EXCEPT api, static assets, AND sitemap/robots
 export const config = {
   matcher: [
-    "/((?!api|_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml).*)",
+    "/((?!api|_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|.*\\.(?:png|jpg|jpeg|gif|svg|webp)$).*)",
   ],
 };
