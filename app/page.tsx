@@ -6,29 +6,28 @@ import { LogIn, Eye, EyeOff } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import toast, { Toaster } from "react-hot-toast";
 import Image from "next/image";
+import Link from "next/link";
 
 export default function HomePage() {
   const router = useRouter();
 
-  // Login modal state
+  // ----- State -----
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [loginForm, setLoginForm] = useState({ email: "", password: "" });
   const [loginSaving, setLoginSaving] = useState(false);
   const [showLoginPassword, setShowLoginPassword] = useState(false);
 
-  // Signup modal state
   const [isSignUpOpen, setIsSignUpOpen] = useState(false);
   const [signUpForm, setSignUpForm] = useState({ email: "", password: "" });
   const [signUpSaving, setSignUpSaving] = useState(false);
   const [showSignUpPassword, setShowSignUpPassword] = useState(false);
   const [isProSignup, setIsProSignup] = useState(false);
 
-  // Forgot password
   const [isForgotOpen, setIsForgotOpen] = useState(false);
   const [forgotEmail, setForgotEmail] = useState("");
   const [forgotSaving, setForgotSaving] = useState(false);
 
-  // ✅ Handle login with session check
+  // ----- Login -----
   const handleLogin = async () => {
     setLoginSaving(true);
     const { email, password } = loginForm;
@@ -50,12 +49,11 @@ export default function HomePage() {
     toast.success("Logged in successfully");
     setIsLoginOpen(false);
 
-    // ✅ Ensure session cookies are ready before redirect
+    // Wait for session
     setTimeout(async () => {
       const {
         data: { session },
       } = await supabase.auth.getSession();
-
       if (session) {
         router.push("/dashboard");
       } else {
@@ -65,7 +63,7 @@ export default function HomePage() {
     }, 400);
   };
 
-  // ✅ Handle signup (free or pro) with session check
+  // ----- Sign Up -----
   const handleSignUp = async (isPro = false) => {
     setSignUpSaving(true);
     const { email, password } = signUpForm;
@@ -87,35 +85,11 @@ export default function HomePage() {
     toast.success("Account created successfully!");
     setIsSignUpOpen(false);
 
-    if (isPro) {
-      try {
-        const res = await fetch("/api/create-checkout-session", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            user_id: data.user.id,
-            email,
-            plan: "pro",
-          }),
-        });
-
-        const { url } = await res.json();
-        if (url) {
-          // Stripe takes over — no dashboard redirect here
-          window.location.href = url;
-          return;
-        }
-      } catch (err) {
-        console.error("Stripe checkout error:", err);
-      }
-    }
-
-    // ✅ Free users (or Stripe error): wait for cookies, then redirect
+    // Free users → redirect to dashboard after cookies set
     setTimeout(async () => {
       const {
         data: { session },
       } = await supabase.auth.getSession();
-
       if (session) {
         router.push("/dashboard");
       } else {
@@ -125,7 +99,7 @@ export default function HomePage() {
     }, 400);
   };
 
-  // Handle forgot password
+  // ----- Forgot Password -----
   const handleForgotPassword = async () => {
     setForgotSaving(true);
     if (!forgotEmail) {
@@ -199,7 +173,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Pricing */}
+      {/* Pricing Preview */}
       <section className="bg-gray-950 py-20">
         <div className="max-w-5xl mx-auto px-6 text-center">
           <h2 className="text-3xl font-bold mb-4">Pricing</h2>
@@ -238,15 +212,13 @@ export default function HomePage() {
                 <li>✅ Priority renewal reminders</li>
                 <li>✅ Access to upcoming features first</li>
               </ul>
-              <button
-                onClick={() => {
-                  setIsProSignup(true);
-                  setIsSignUpOpen(true);
-                }}
-                className="mt-auto px-6 py-3 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-medium"
+              <Link
+                href="/pricing"
+                className="mt-auto px-6 py-3 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-center"
               >
                 Upgrade to Pro – $5/month
-              </button>
+              </Link>
+              <p className="text-sm text-gray-400 mt-3">Cancel anytime. Zero hassle, no hidden fees.</p>
             </div>
           </div>
         </div>
@@ -257,7 +229,8 @@ export default function HomePage() {
         © 2025 CashDuezy. All rights reserved.
       </footer>
 
-      {/* Login Modal */}
+      {/* Modals */}
+      {/* Login */}
       {isLoginOpen && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
           <div className="bg-gray-900 border border-gray-700 rounded-lg p-6 max-w-md w-full">
@@ -325,7 +298,7 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* Signup Modal */}
+      {/* Signup */}
       {isSignUpOpen && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
           <div className="bg-gray-900 border border-gray-700 rounded-lg p-6 max-w-md w-full">
@@ -381,7 +354,7 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* Forgot Password Modal */}
+      {/* Forgot Password */}
       {isForgotOpen && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
           <div className="bg-gray-900 border border-gray-700 rounded-lg p-6 max-w-md w-full">
@@ -398,7 +371,7 @@ export default function HomePage() {
                 Cancel
               </button>
               <button
-                onClick={() => handleForgotPassword()}
+                onClick={handleForgotPassword}
                 disabled={forgotSaving}
                 className="px-4 py-2 rounded-md bg-violet-600 hover:bg-violet-500"
               >
