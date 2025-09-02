@@ -1153,8 +1153,8 @@ const handleExportPDF = () => {
     <div className="space-y-3 text-sm">
       <p>
         For support or general inquiries, please contact us at{" "}
-        <a href="mailto:b.sasuta@gmail.com" className="underline">
-          b.sasuta@gmail.com
+        <a href="mailto:support@cashduezy.com" className="underline">
+          support@cashduezy.com
         </a>
         .
       </p>
@@ -1164,8 +1164,8 @@ const handleExportPDF = () => {
     <div className="space-y-3 text-sm">
       <p>
         This Privacy Policy describes how CashDuezy (&quot;we,&quot; &quot;us,&quot; or &quot;our&quot;) collects, uses, and shares your personal information when you use our services. Personal information is any data that can identify an individual. We collect personal information (such as names, email addresses, billing and shipping details, and payment information) when you sign up and use our subscription management services. We use this information to provide and improve our services, process payments, communicate with you, and comply with legal obligations. We may share your personal information with third-party service providers, such as payment processors, only as necessary to provide the service. We do not sell or rent your personal data. We retain personal data only as long as needed for the purposes described and in accordance with applicable laws. We implement reasonable technical and organizational measures to protect your personal information. You have the right to access, correct, or delete your personal information and to object to or restrict its processing. To exercise these rights, please contact us at{" "}
-        <a href="mailto:b.sasuta@gmail.com" className="underline">
-          b.sasuta@gmail.com
+        <a href="mailto:support@cashduezy.com" className="underline">
+          support@cashduezy.com
         </a>
         . By using CashDuezy, you agree to this Privacy Policy and any updates we may make. We will post any changes to this Policy on this page. If you continue to use the service after changes are posted, you consent to the updated policy.
       </p>
@@ -1208,8 +1208,8 @@ const handleExportPDF = () => {
       </p>
       <p>
         <strong>Contact.</strong> If you have questions or concerns about these Terms, please contact us at{" "}
-        <a href="mailto:b.sasuta@gmail.com" className="underline">
-          b.sasuta@gmail.com
+        <a href="mailto:support@cashduezy.com" className="underline">
+          support@cashduezy.com
         </a>
         .
       </p>
