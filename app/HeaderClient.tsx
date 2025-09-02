@@ -7,14 +7,20 @@ import { Sun, Moon, Settings, Monitor } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 
+/**
+ * Types for theme choices
+ */
 type ThemeChoice = "light" | "dark" | "system";
 
+/**
+ * HeaderClient — Responsive top navigation bar with brand, navigation links, and theme controls.
+ */
 export default function HeaderClient() {
   const pathname = usePathname();
 
-  // Theme state: default to system
-  const [theme, setTheme] = useState<ThemeChoice>("system");
-  const [open, setOpen] = useState(false);
+  // --- State ---
+  const [theme, setTheme] = useState<ThemeChoice>("system"); // Default: system
+  const [open, setOpen] = useState(false); // Dropdown open/close
   const menuRef = useRef<HTMLDivElement>(null);
 
   // --- Initialize theme on mount ---
@@ -68,7 +74,7 @@ export default function HeaderClient() {
   return (
     <header className="sticky top-0 z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur border-b border-gray-200 dark:border-gray-800">
       <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-        {/* Brand: Logo + Name */}
+        {/* --- Brand: Logo + Name --- */}
         <Link href="/" className="flex items-center gap-3">
           <span className="p-2 rounded-md border border-indigo-300 dark:border-violet-800/40 bg-indigo-100 dark:bg-violet-900/30">
             <Image
@@ -83,19 +89,51 @@ export default function HeaderClient() {
           <span className="text-lg font-semibold">CashDuezy</span>
         </Link>
 
-        {/* Navigation + Theme dropdown */}
+        {/* --- Navigation Links + Theme Dropdown --- */}
         <nav className="flex items-center gap-6 text-sm">
-          <Link href="/" className={`hover:underline ${pathname === "/" ? "font-semibold" : ""}`}>
+          {/* Main pages */}
+          <Link
+            href="/"
+            className={`hover:underline ${pathname === "/" ? "font-semibold" : ""}`}
+          >
             Home
           </Link>
-          <Link href="/pricing" className={`hover:underline ${pathname === "/pricing" ? "font-semibold" : ""}`}>
+          <Link
+            href="/pricing"
+            className={`hover:underline ${pathname === "/pricing" ? "font-semibold" : ""}`}
+          >
             Pricing
           </Link>
-          <Link href="/dashboard" className={`hover:underline ${pathname?.startsWith("/dashboard") ? "font-semibold" : ""}`}>
+          <Link
+            href="/dashboard"
+            className={`hover:underline ${
+              pathname?.startsWith("/dashboard") ? "font-semibold" : ""
+            }`}
+          >
             Dashboard
           </Link>
 
-          {/* Theme settings */}
+          {/* Newly added informational pages */}
+          <Link
+            href="/faq"
+            className={`hover:underline ${pathname === "/faq" ? "font-semibold" : ""}`}
+          >
+            FAQ
+          </Link>
+          <Link
+            href="/changelog"
+            className={`hover:underline ${pathname === "/changelog" ? "font-semibold" : ""}`}
+          >
+            Changelog
+          </Link>
+          <Link
+            href="/support"
+            className={`hover:underline ${pathname === "/support" ? "font-semibold" : ""}`}
+          >
+            Support
+          </Link>
+
+          {/* Theme settings dropdown */}
           <div className="relative" ref={menuRef}>
             <button
               onClick={() => setOpen((v) => !v)}
@@ -111,7 +149,7 @@ export default function HeaderClient() {
                 className="absolute right-0 mt-2 w-44 rounded-md shadow-lg border bg-white dark:bg-gray-900
                            border-gray-200 dark:border-gray-800 overflow-hidden"
               >
-                {/* System Default */}
+                {/* --- System Default --- */}
                 <button
                   onClick={() => applyTheme("system")}
                   className="w-full px-3 py-2 flex items-center justify-between text-sm hover:bg-gray-100 dark:hover:bg-gray-800"
@@ -122,7 +160,7 @@ export default function HeaderClient() {
                   {theme === "system" && <span>✓</span>}
                 </button>
 
-                {/* Light */}
+                {/* --- Light --- */}
                 <button
                   onClick={() => applyTheme("light")}
                   className="w-full px-3 py-2 flex items-center justify-between text-sm hover:bg-gray-100 dark:hover:bg-gray-800"
@@ -133,7 +171,7 @@ export default function HeaderClient() {
                   {theme === "light" && <span>✓</span>}
                 </button>
 
-                {/* Dark */}
+                {/* --- Dark --- */}
                 <button
                   onClick={() => applyTheme("dark")}
                   className="w-full px-3 py-2 flex items-center justify-between text-sm hover:bg-gray-100 dark:hover:bg-gray-800"
