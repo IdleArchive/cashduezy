@@ -238,7 +238,7 @@ useEffect(() => {
         if (!res.ok) throw new Error("checkout-success failed");
         // Re-check Pro status
         await checkProStatus();
-        toast.success("Pro activated!");
+        toast.success("Pro plan activated — thank you!");
         router.replace("/dashboard"); // clean URL
       } catch (err) {
         console.error(err);
@@ -608,7 +608,7 @@ function showRenewalReminders(subs: Subscription[]) {
     }
     const amt = Number(form.amount);
     if (!Number.isFinite(amt) || amt <= 0) {
-      toast.error("Enter a valid amount");
+      toast.error("Please enter a valid amount");
       return;
     }
 
@@ -705,7 +705,7 @@ function showRenewalReminders(subs: Subscription[]) {
     }
     const amt = Number(form.amount);
     if (!Number.isFinite(amt) || amt <= 0) {
-      toast.error("Enter a valid amount");
+      toast.error("Please enter a valid amount");
       setSaving(false);
       return;
     }
@@ -784,7 +784,7 @@ function showRenewalReminders(subs: Subscription[]) {
   const handleUpgrade = async () => {
     const stripe = await stripePromise;
     if (!stripe) {
-      toast.error("Stripe failed to load");
+      toast.error("Payment system failed to load. Please refresh and try again.");
       return;
     }
     const res = await fetch("/api/create-checkout-session", {
@@ -800,7 +800,7 @@ function showRenewalReminders(subs: Subscription[]) {
     }
     const result = await stripe.redirectToCheckout({ sessionId: session.id });
     if (result.error) {
-      toast.error(result.error.message || "Stripe checkout failed");
+      toast.error(result.error.message || "Checkout failed. Please try again.");
     }
   };
 
@@ -815,7 +815,7 @@ function showRenewalReminders(subs: Subscription[]) {
     }
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error || !data?.user) {
-      toast.error(error?.message || "Login failed");
+      toast.error(error?.message || "Invalid email or password. Please try again.");
       setLoginSaving(false);
       return;
     }
@@ -824,7 +824,7 @@ function showRenewalReminders(subs: Subscription[]) {
     const subs = await fetchData(data.user.id); // ✅ fetch + return subscriptions
     showRenewalReminders(subs);                 // ✅ trigger renewal toasts
     setLoginSaving(false);
-    toast.success("Logged in successfully");
+    toast.success("Welcome back!");
   };
   // Handle signup
 const handleSignUp = async () => {
@@ -838,7 +838,7 @@ const handleSignUp = async () => {
 
   const { data, error } = await supabase.auth.signUp({ email, password });
   if (error || !data?.user) {
-    toast.error(error?.message || "Sign up failed");
+    toast.error(error?.message || "Couldn’t create account. Please check your details and try again.");
     setSignUpSaving(false);
     return;
   }
@@ -848,7 +848,7 @@ const handleSignUp = async () => {
   await fetchData(data.user.id);
 
   // ✅ Toast happens ONCE, right after signup succeeds
-  toast.success("Account created successfully!");
+  toast.success("Account created successfully — welcome to CashDuezy!");
 
   setIsSignUpOpen(false);
   setSignUpSaving(false);
@@ -869,7 +869,7 @@ const handleSignUp = async () => {
     setUserEmail(null);
     setSubscriptions([]);
     setIsPro(false);
-    toast.success("Logged out");
+    toast.success("You’ve been logged out.");
 
       // 🚪 Send them back to homepage
     router.push("/");
@@ -1007,7 +1007,7 @@ const handleInviteUser = async () => {
 };
 const handleExportCSV = () => {
   if (!isPro) {
-    toast.error("CSV export is a Pro feature. Upgrade to Pro to unlock.");
+    toast.error("CSV export is only available on Pro. Upgrade to unlock this feature.");
     setIsExportModalOpen(false);
     return;
   }
@@ -1034,7 +1034,7 @@ const handleExportCSV = () => {
 
 const handleExportPDF = () => {
   if (!isPro) {
-    toast.error("PDF export is a Pro feature. Upgrade to Pro to unlock.");
+    toast.error("PDF export is only available on Pro. Upgrade to unlock this feature.");
     setIsExportModalOpen(false);
     return;
   }
