@@ -950,22 +950,61 @@ const handleSignUp = async () => {
       setIsAlertsModalOpen(false);
     }
   };
-  const handleInviteUser = async () => {
-    if (!shareEmail) {
-      toast.error("Please enter an email to share with");
-      return;
-    }
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      toast.error("You must be logged in to share");
-      return;
-    }
-    toast.success(`Invitation sent to ${shareEmail}`);
-    setShareEmail("");
-    setIsShareModalOpen(false);
-  };
+const handleInviteUser = async () => {
+  if (!shareEmail) {
+    toast.error("Please enter an email to share with");
+    return;
+  }
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    toast.error("You must be logged in to share");
+    return;
+  }
+
+  // Get inviter's group_id
+  const { data: inviterProfile, error: profileErr } = await supabase
+    .from("profiles")
+    .select("group_id")
+    .eq("id", user.id)
+    .single();
+
+  if (profileErr || !inviterProfile) {
+    toast.error("Failed to load profile");
+    return;
+  }
+
+  const groupId = inviterProfile.group_id;
+
+  // Count members in this group
+  const { data: members, error: membersErr } = await supabase
+    .from("profiles")
+    .select("id")
+    .eq("group_id", groupId);
+
+  if (membersErr) {
+    toast.error("Failed to check group size");
+    return;
+  }
+
+  if (members && members.length >= 3) {
+    toast.error("Pro plan allows up to 3 members. Upgrade coming soon!");
+    return;
+  }
+
+  // Here you would normally send an invite email or link.
+  // For now, just simulate attaching the invited user to the group.
+  await supabase
+    .from("profiles")
+    .update({ group_id: groupId, role: "member" })
+    .eq("email", shareEmail);
+
+  toast.success(`Invitation sent to ${shareEmail}`);
+  setShareEmail("");
+  setIsShareModalOpen(false);
+};
 const handleExportCSV = () => {
   if (!isPro) {
     toast.error("CSV export is a Pro feature. Upgrade to Pro to unlock.");
