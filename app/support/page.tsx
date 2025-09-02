@@ -39,13 +39,16 @@ Account email:
   );
 
   return (
-    <main className="max-w-3xl mx-auto px-4 py-12 space-y-10">
+    <main className="max-w-3xl mx-auto px-4 py-16 space-y-12">
       {/* Header */}
-      <header className="space-y-2">
-        <h1 className="text-3xl font-bold">Support & Cancellation</h1>
+      <header className="space-y-3">
+        <h1 className="text-4xl font-extrabold">Support & Cancellation</h1>
         <p className="text-gray-400">
           We’re here to help. If you can’t find what you need below, email us at{" "}
-          <a href={`mailto:${supportEmail}`} className="underline">
+          <a
+            href={`mailto:${supportEmail}`}
+            className="underline hover:text-violet-400 transition-colors"
+          >
             {supportEmail}
           </a>
           . We aim to reply within <strong>24 hours (Mon–Fri, PT)</strong>.
@@ -53,36 +56,42 @@ Account email:
       </header>
 
       {/* Quick actions */}
-      <section className="grid gap-4 sm:grid-cols-2">
-        <a
-          href={`mailto:${supportEmail}?subject=${generalSubject}&body=${generalBody}`}
-          className="block rounded-lg border border-gray-700/60 p-4 hover:bg-gray-800/40 transition"
-        >
-          <h2 className="font-semibold">Contact Support</h2>
-          <p className="text-sm text-gray-400">
-            Get help with setup, billing, notifications, or anything else.
-          </p>
-        </a>
+      <section>
+        <h2 className="sr-only">Quick Actions</h2>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <a
+            href={`mailto:${supportEmail}?subject=${generalSubject}&body=${generalBody}`}
+            className="block rounded-lg border border-gray-700/60 p-4 hover:bg-gray-800/40 transition"
+          >
+            <h3 className="font-semibold mb-1">Contact Support</h3>
+            <p className="text-sm text-gray-400">
+              Get help with setup, billing, notifications, or anything else.
+            </p>
+          </a>
 
-        <a
-          href={`mailto:${supportEmail}?subject=${cancelSubject}&body=${cancelBody}`}
-          className="block rounded-lg border border-gray-700/60 p-4 hover:bg-gray-800/40 transition"
-        >
-          <h2 className="font-semibold">Request Cancellation</h2>
-          <p className="text-sm text-gray-400">
-            Manual cancellation while in-app automation is being built.
-          </p>
-        </a>
+          <a
+            href={`mailto:${supportEmail}?subject=${cancelSubject}&body=${cancelBody}`}
+            className="block rounded-lg border border-gray-700/60 p-4 hover:bg-gray-800/40 transition"
+          >
+            <h3 className="font-semibold mb-1">Request Cancellation</h3>
+            <p className="text-sm text-gray-400">
+              Manual cancellation while in-app automation is being built.
+            </p>
+          </a>
+        </div>
       </section>
 
-      {/* Cancellation (honest + simple) */}
-      <section className="space-y-3">
-        <h2 className="text-xl font-semibold">How cancellation works (for now)</h2>
-        <div className="rounded-lg border border-gray-700/60 p-4 space-y-2">
+      {/* Cancellation */}
+      <section className="space-y-4">
+        <h2 className="text-2xl font-semibold">How cancellation works (for now)</h2>
+        <div className="rounded-lg border border-gray-700/60 p-4 space-y-3">
           <ol className="list-decimal list-inside space-y-2 text-gray-200">
             <li>
               Email{" "}
-              <a href={`mailto:${supportEmail}?subject=${cancelSubject}&body=${cancelBody}`} className="underline">
+              <a
+                href={`mailto:${supportEmail}?subject=${cancelSubject}&body=${cancelBody}`}
+                className="underline hover:text-violet-400 transition-colors"
+              >
                 {supportEmail}
               </a>{" "}
               with the subject <em>“Cancel My CashDuezy Subscription”</em>. Please include
@@ -99,7 +108,7 @@ Account email:
           </ol>
           <p className="text-sm text-gray-400">
             Automated in-app cancellation is coming soon. We’ll announce it on our{" "}
-            <Link href="/changelog" className="underline">
+            <Link href="/changelog" className="underline hover:text-violet-400 transition-colors">
               Changelog
             </Link>
             .
@@ -108,8 +117,8 @@ Account email:
       </section>
 
       {/* Data export / deletion */}
-      <section className="space-y-3">
-        <h2 className="text-xl font-semibold">Data export & deletion</h2>
+      <section className="space-y-4">
+        <h2 className="text-2xl font-semibold">Data export & deletion</h2>
         <div className="rounded-lg border border-gray-700/60 p-4 space-y-2">
           <ul className="list-disc list-inside space-y-2 text-gray-200">
             <li>
@@ -119,7 +128,7 @@ Account email:
               <strong>Deletion:</strong> Want your data deleted? Email{" "}
               <a
                 href={`mailto:${supportEmail}?subject=${deleteSubject}&body=${deleteBody}`}
-                className="underline"
+                className="underline hover:text-violet-400 transition-colors"
               >
                 {supportEmail}
               </a>{" "}
@@ -127,7 +136,7 @@ Account email:
             </li>
             <li>
               We never sell your data. Learn more on our{" "}
-              <Link href="/faq" className="underline">
+              <Link href="/faq" className="underline hover:text-violet-400 transition-colors">
                 FAQ
               </Link>
               .
@@ -137,27 +146,30 @@ Account email:
       </section>
 
       {/* More help */}
-      <section className="space-y-3">
-        <h2 className="text-xl font-semibold">More help</h2>
+      <section className="space-y-4">
+        <h2 className="text-2xl font-semibold">More help</h2>
         <div className="rounded-lg border border-gray-700/60 p-4 space-y-2">
           <ul className="list-disc list-inside space-y-2 text-gray-200">
             <li>
               Read the{" "}
-              <Link href="/faq" className="underline">
+              <Link href="/faq" className="underline hover:text-violet-400 transition-colors">
                 FAQ
               </Link>{" "}
               for pricing, privacy, billing, and notifications.
             </li>
             <li>
               See what’s shipped and what’s next on the{" "}
-              <Link href="/changelog" className="underline">
+              <Link href="/changelog" className="underline hover:text-violet-400 transition-colors">
                 Changelog
               </Link>
               .
             </li>
             <li>
               Can’t find the answer? Email{" "}
-              <a href={`mailto:${supportEmail}?subject=${generalSubject}&body=${generalBody}`} className="underline">
+              <a
+                href={`mailto:${supportEmail}?subject=${generalSubject}&body=${generalBody}`}
+                className="underline hover:text-violet-400 transition-colors"
+              >
                 {supportEmail}
               </a>{" "}
               and we’ll help you out.

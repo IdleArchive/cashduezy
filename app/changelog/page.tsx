@@ -65,23 +65,28 @@ function TypeBadge({ type }: { type: UpdateType }) {
 
 export default function ChangelogPage() {
   return (
-    <main className="max-w-3xl mx-auto px-4 py-12 space-y-8">
+    <main className="max-w-3xl mx-auto px-4 py-16 space-y-10">
+      {/* Header */}
       <header>
-        <h1 className="text-3xl font-bold">What’s New</h1>
-        <p className="text-gray-400 mt-2">
+        <h1 className="text-4xl font-extrabold mb-4">What’s New</h1>
+        <p className="text-gray-400">
           Transparent updates from the CashDuezy team. We keep this page accurate and
           up to date so you always know what changed.
         </p>
       </header>
 
-      <ul className="space-y-6">
+      {/* Update List */}
+      <ul className="space-y-8">
         {updates.map((u, i) => (
-          <li key={`${u.date}-${u.title}-${i}`} className="border-b border-gray-700 pb-4 last:border-none">
-            <div className="flex items-center gap-2 mb-1">
+          <li
+            key={`${u.date}-${u.title}-${i}`}
+            className="border-b border-gray-700 pb-6 last:border-none"
+          >
+            <div className="flex items-center gap-3 mb-2">
               <TypeBadge type={u.type} />
               <time className="text-sm text-gray-400">{u.date}</time>
             </div>
-            <h2 className="text-lg font-semibold">{u.title}</h2>
+            <h2 className="text-xl font-semibold mb-1">{u.title}</h2>
             <p className="text-gray-200">{u.description}</p>
           </li>
         ))}
