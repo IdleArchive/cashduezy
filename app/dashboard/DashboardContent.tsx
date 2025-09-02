@@ -48,22 +48,44 @@ import jsPDF from "jspdf";
 const DEV_EMAIL = process.env.NEXT_PUBLIC_DEV_EMAIL;
 export function useRequireSession() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [ready, setReady] = useState(false);
-  
 
   useEffect(() => {
     let mounted = true;
+    const legal = searchParams?.get("legal"); // ✅ moved outside
+
+    // ✅ Initial session check
     supabase.auth.getSession().then(({ data }) => {
-      if (!data.session) router.replace("/"); // not logged in → home
-      else if (mounted) setReady(true);
+      if (
+  !data.session &&
+  !(legal === "privacy" || legal === "terms")
+) {
+  router.replace("/");
+} else if (mounted) {
+        setReady(true);
+      }
     });
+
+    // ✅ Keep listening for auth changes
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!session && !legal) {
+        router.replace("/");
+      } else if (mounted) {
+        setReady(true);
+      }
+    });
+
     return () => {
       mounted = false;
+      listener.subscription.unsubscribe();
     };
-  }, [router]);
+  }, [router, searchParams]);
 
   return ready;
 }
+
+
 
 // Replace with your publishable key from environment variables
 const stripePromise = loadStripe(
@@ -159,6 +181,21 @@ export default function DashboardContent() {
 
   // Footer modal state
   const [activeFooterModal, setActiveFooterModal] = useState<null | "about" | "contact" | "privacy" | "terms">(null);
+useEffect(() => {
+  const handler = (e: any) => setActiveFooterModal(e.detail);
+  window.addEventListener("openFooterModal", handler);
+  return () => window.removeEventListener("openFooterModal", handler);
+}, []);
+
+// Auto-open Privacy/Terms modal if we arrive with ?legal=privacy|terms
+useEffect(() => {
+  const legal = searchParams?.get("legal");
+  if (legal === "privacy" || legal === "terms") {
+    setActiveFooterModal(legal);
+    // Clean up URL so it’s just /dashboard after opening
+    router.replace("/dashboard");
+  }
+}, [searchParams, router]);
 
   // Theme state
 const [theme, setTheme] = useState<string>("dark");
@@ -1621,30 +1658,6 @@ const handleExportPDF = () => {
           </div>
         )}
       </main>
-
-      {/* ===== Footer ===== */}
-      <footer className={`border-t ${isDark ? "border-gray-800" : "border-gray-200"} py-4 text-center text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}>
-        <div className="flex flex-col sm:flex-row justify-center gap-4 sm:gap-6 items-center">
-          <nav className="flex gap-2 sm:gap-4 items-center">
-            <a href="#" onClick={(e) => { e.preventDefault(); setActiveFooterModal("about"); }} className="hover:underline">
-              About
-            </a>
-            <span>|</span>
-            <a href="#" onClick={(e) => { e.preventDefault(); setActiveFooterModal("contact"); }} className="hover:underline">
-              Contact
-            </a>
-            <span>|</span>
-            <a href="#" onClick={(e) => { e.preventDefault(); setActiveFooterModal("privacy"); }} className="hover:underline">
-              Privacy
-            </a>
-            <span>|</span>
-            <a href="#" onClick={(e) => { e.preventDefault(); setActiveFooterModal("terms"); }} className="hover:underline">
-              Terms of Service
-            </a>
-          </nav>
-        </div>
-        <div className="mt-2">© 2025 CashDuezy. All rights reserved.</div>
-      </footer>
 
       {/* ===== Modals ===== */}
 

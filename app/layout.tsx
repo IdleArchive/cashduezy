@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import HeaderClient from "./HeaderClient";
 import HideOnDashboard from "./HideOnDashboard";
+import FooterClient from "./FooterClient"; // site-wide legal buttons
 
 // --- Base URL configuration (switches automatically for prod/dev) ---
 const baseUrl =
@@ -11,7 +12,11 @@ const baseUrl =
     ? "https://www.cashduezy.com"
     : "http://localhost:3000";
 
-// --- SEO + Metadata configuration ---
+/**
+ * Global SEO + Metadata configuration
+ * - Includes Open Graph, Twitter, and base config
+ * - Ensures consistent preview cards and SEO across site
+ */
 export const metadata: Metadata = {
   metadataBase: new URL(baseUrl),
   title: {
@@ -64,16 +69,22 @@ export const metadata: Metadata = {
 
 /**
  * RootLayout — wraps every page in the app with:
- * - Global theme handling
- * - Header (hidden on /dashboard)
- * - Footer (hidden on /dashboard)
- * - SEO metadata
+ * - Early theme handling (dark/light/system)
+ * - Header (hidden on /dashboard pages)
+ * - Footer (hidden on /dashboard pages)
+ * - Global legal modal support (via FooterClient)
+ * - SEO metadata from above
  */
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        {/* --- Early Theme Application Script --- */}
+        {/* --- Early Theme Application Script ---
+             Ensures dark/light mode is applied before content flashes */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -81,7 +92,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 try {
                   var saved = localStorage.getItem('theme') || 'system';
                   var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                  var resolved = saved === 'system' ? (prefersDark ? 'dark' : 'light') : saved;
+                  var resolved = saved === 'system'
+                    ? (prefersDark ? 'dark' : 'light')
+                    : saved;
                   if (resolved === 'dark') {
                     document.documentElement.classList.add('dark');
                   } else {
@@ -100,15 +113,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                    bg-gray-50 text-gray-800
                    dark:bg-gray-950 dark:text-gray-100"
       >
-        {/* --- Header: hidden on /dashboard pages --- */}
+        {/* --- Header: hidden on dashboard pages --- */}
         <HideOnDashboard>
           <HeaderClient />
         </HideOnDashboard>
 
-        {/* --- Main content --- */}
+        {/* --- Main content area --- */}
         <main className="flex-1">{children}</main>
 
-        {/* --- Footer: hidden on /dashboard pages --- */}
+        {/* --- Footer: hidden on dashboard pages --- */}
         <HideOnDashboard>
           <footer className="border-t border-gray-200 dark:border-gray-800 py-10 text-sm">
             <div className="max-w-6xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -162,9 +175,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 </p>
               </div>
 
-              {/* Column 3: Legal / Rights */}
-              <div className="text-gray-600 dark:text-gray-500 md:text-right">
-                <p>&copy; {new Date().getFullYear()} CashDuezy. All rights reserved.</p>
+              {/* Column 3: Legal / Rights (copyright + buttons) */}
+              <div className="text-gray-600 dark:text-gray-500 md:text-right space-y-2">
+                <p>
+                  &copy; {new Date().getFullYear()} CashDuezy. All rights
+                  reserved.
+                </p>
+                {/* FooterClient handles Privacy + Terms modals site-wide */}
+                <FooterClient className="flex gap-4 justify-center md:justify-end" />
               </div>
             </div>
           </footer>
