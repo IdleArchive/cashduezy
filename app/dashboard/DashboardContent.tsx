@@ -43,6 +43,7 @@ import Image from "next/image";
 import type { User } from "@supabase/supabase-js";
 import Link from "next/link";
 import UserAvatar from "@/components/UserAvatar";
+import jsPDF from "jspdf";
 // ✅ NEW: session guard hook
 const DEV_EMAIL = process.env.NEXT_PUBLIC_DEV_EMAIL;
 export function useRequireSession() {
@@ -965,26 +966,82 @@ const handleSignUp = async () => {
     setShareEmail("");
     setIsShareModalOpen(false);
   };
-  const handleExportCSV = () => {
+const handleExportCSV = () => {
+  if (!isPro) {
+    toast.error("CSV export is a Pro feature. Upgrade to Pro to unlock.");
+    setIsExportModalOpen(false);
+    return;
+  }
+
+  const header = ["Name", "Amount", "Currency", "Cadence", "Next Charge Date"];
+  const lines = subscriptions.map((s) =>
+    [s.name, s.amount, s.currency, s.cadence, s.next_charge_date ?? ""].join(",")
+  );
+  const csv = [header.join(","), ...lines].join("\n");
+
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.setAttribute("download", "subscriptions.csv");
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+
+  toast.success("CSV downloaded");
+  setIsExportModalOpen(false);
+};
+
+const handleExportPDF = () => {
+  if (!isPro) {
+    toast.error("PDF export is a Pro feature. Upgrade to Pro to unlock.");
+    setIsExportModalOpen(false);
+    return;
+  }
+
+  try {
+    const doc = new jsPDF();
+
+    // Title
+    doc.setFontSize(16);
+    doc.text("CashDuezy - Subscriptions Export", 14, 20);
+
+    // Table header + rows
     const header = ["Name", "Amount", "Currency", "Cadence", "Next Charge Date"];
-    const lines = subscriptions.map((s) => [s.name, s.amount, s.currency, s.cadence, s.next_charge_date ?? ""].join(","));
-    const csv = [header.join(","), ...lines].join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", "subscriptions.csv");
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-    toast.success("CSV downloaded");
-    setIsExportModalOpen(false);
-  };
-  const handleExportPDF = () => {
-    toast("PDF export coming soon!");
-    setIsExportModalOpen(false);
-  };
+    const rows = subscriptions.map((s) => [
+      s.name,
+      s.amount.toFixed(2),
+      s.currency,
+      s.cadence,
+      s.next_charge_date ?? "",
+    ]);
+
+    // Draw header
+    let startY = 30;
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    header.forEach((h, i) => doc.text(h, 14 + i * 40, startY));
+
+    // Draw rows
+    doc.setFont("helvetica", "normal");
+    rows.forEach((row, rowIndex) => {
+      const y = startY + (rowIndex + 1) * 10;
+      row.forEach((cell, i) => {
+        doc.text(String(cell), 14 + i * 40, y);
+      });
+    });
+
+    doc.save("subscriptions.pdf");
+    toast.success("PDF downloaded");
+  } catch (err) {
+    console.error(err);
+    toast.error("Failed to export PDF");
+  }
+
+  setIsExportModalOpen(false);
+};
+
   // Forgot password handler
   const handleForgotPassword = async () => {
     setForgotSaving(true);
@@ -2044,28 +2101,43 @@ const handleSignUp = async () => {
         </div>
       )}
 
-      {/* Export Modal */}
-      {isExportModalOpen && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-          <div className={`rounded-xl shadow-lg p-6 w-full max-w-sm ${cardBg} ${cardBorder}`}>
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-semibold">Export Data</h2>
-              <button onClick={() => setIsExportModalOpen(false)} className={`${isDark ? "text-gray-400 hover:text-gray-200" : "text-gray-500 hover:text-gray-700"}`}>
-                ✕
-              </button>
-            </div>
-            <p className={`text-sm ${isDark ? "text-gray-300" : "text-gray-600"} mb-4`}>Choose a format to download your data.</p>
-            <div className="flex flex-col gap-3">
-              <button onClick={handleExportCSV} className={`px-4 py-2 rounded-md flex items-center gap-2 ${accentButton("emerald")}`}>
-                <Download className="w-4 h-4" /> CSV
-              </button>
-              <button onClick={handleExportPDF} className={`px-4 py-2 rounded-md flex items-center gap-2 ${accentButton("violet")}`}>
-                <Download className="w-4 h-4" /> PDF
-              </button>
-            </div>
+{/* Export Modal */}
+{isExportModalOpen && (
+  <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+    <div className={`rounded-xl shadow-lg p-6 w-full max-w-sm ${cardBg} ${cardBorder}`}>
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-lg font-semibold">Export Data</h2>
+        <button onClick={() => setIsExportModalOpen(false)} className={`${isDark ? "text-gray-400 hover:text-gray-200" : "text-gray-500 hover:text-gray-700"}`}>
+          ✕
+        </button>
+      </div>
+
+      {isPro ? (
+        <>
+          <p className={`text-sm ${isDark ? "text-gray-300" : "text-gray-600"} mb-4`}>
+            Choose a format to download your data.
+          </p>
+          <div className="flex flex-col gap-3">
+            <button onClick={handleExportCSV} className={`px-4 py-2 rounded-md flex items-center gap-2 ${accentButton("emerald")}`}>
+              <Download className="w-4 h-4" /> CSV
+            </button>
+            <button onClick={handleExportPDF} className={`px-4 py-2 rounded-md flex items-center gap-2 ${accentButton("violet")}`}>
+              <Download className="w-4 h-4" /> PDF
+            </button>
           </div>
-        </div>
+        </>
+      ) : (
+        <p className="text-sm text-center text-gray-400">
+          Data export is a <span className="font-semibold">Pro feature</span>.{" "}
+          <Link href="/pricing" className="underline text-violet-400">
+            Upgrade to Pro
+          </Link>{" "}
+          to enable downloads.
+        </p>
       )}
+    </div>
+  </div>
+)}
 
       <Toaster position="top-right" />
     </div>
