@@ -1,4 +1,13 @@
+# *
 User-agent: *
 Allow: /
 
-Sitemap: https://www.cashduezy.com/sitemap.xml
+# *
+User-agent: *
+Disallow: /dashboard
+
+# Host
+Host: https://cashduezy.com
+
+# Sitemaps
+Sitemap: https://cashduezy.com/sitemap.xml

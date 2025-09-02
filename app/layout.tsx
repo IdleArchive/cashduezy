@@ -2,6 +2,7 @@
 import "./globals.css";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Suspense } from "react";              // ✅ add
 import HeaderClient from "./HeaderClient";
 import HideOnDashboard from "./HideOnDashboard";
 
@@ -13,8 +14,6 @@ const baseUrl =
 
 /**
  * Global SEO + Metadata configuration
- * - Includes Open Graph, Twitter, and base config
- * - Ensures consistent preview cards and SEO across site
  */
 export const metadata: Metadata = {
   metadataBase: new URL(baseUrl),
@@ -45,12 +44,7 @@ export const metadata: Metadata = {
     url: "https://www.cashduezy.com",
     siteName: "CashDuezy",
     images: [
-      {
-        url: "/cashduezy_preview.png",
-        width: 1200,
-        height: 630,
-        alt: "CashDuezy preview",
-      },
+      { url: "/cashduezy_preview.png", width: 1200, height: 630, alt: "CashDuezy preview" },
     ],
     locale: "en_US",
     type: "website",
@@ -66,18 +60,7 @@ export const metadata: Metadata = {
   icons: { icon: "/favicon.ico" },
 };
 
-/**
- * RootLayout — wraps every page in the app with:
- * - Early theme handling (dark/light/system)
- * - Header (hidden on /dashboard pages)
- * - Footer (hidden on /dashboard pages)
- * - SEO metadata from above
- */
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -110,52 +93,56 @@ export default function RootLayout({
                    bg-gray-50 text-gray-800
                    dark:bg-gray-950 dark:text-gray-100"
       >
-        {/* --- Header: hidden on dashboard pages --- */}
-        <HideOnDashboard>
-          <HeaderClient />
-        </HideOnDashboard>
+        {/* --- Header: hidden on /dashboard pages --- */}
+        <Suspense fallback={null}>
+          <HideOnDashboard>
+            <HeaderClient />
+          </HideOnDashboard>
+        </Suspense>
 
         {/* --- Main content area --- */}
         <main className="flex-1">{children}</main>
 
-        {/* --- Footer: hidden on dashboard pages --- */}
-        <HideOnDashboard>
-          <footer className="border-t border-gray-200 dark:border-gray-800 py-10 text-sm">
-            <div className="max-w-6xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-8">
-              {/* Column 1: Company navigation */}
-              <div>
-                <h3 className="font-semibold mb-2">Company</h3>
-                <ul className="space-y-1">
-                  <li><Link href="/" className="hover:underline">Home</Link></li>
-                  <li><Link href="/pricing" className="hover:underline">Pricing</Link></li>
-                  <li><Link href="/dashboard" className="hover:underline">Dashboard</Link></li>
-                  <li><Link href="/faq" className="hover:underline">FAQ</Link></li>
-                  <li><Link href="/changelog" className="hover:underline">Changelog</Link></li>
-                  <li><Link href="/support" className="hover:underline">Support</Link></li>
-                </ul>
-              </div>
+        {/* --- Footer: hidden on /dashboard pages --- */}
+        <Suspense fallback={null}>
+          <HideOnDashboard>
+            <footer className="border-t border-gray-200 dark:border-gray-800 py-10 text-sm">
+              <div className="max-w-6xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-8">
+                {/* Column 1: Company navigation */}
+                <div>
+                  <h3 className="font-semibold mb-2">Company</h3>
+                  <ul className="space-y-1">
+                    <li><Link href="/" className="hover:underline">Home</Link></li>
+                    <li><Link href="/pricing" className="hover:underline">Pricing</Link></li>
+                    <li><Link href="/dashboard" className="hover:underline">Dashboard</Link></li>
+                    <li><Link href="/faq" className="hover:underline">FAQ</Link></li>
+                    <li><Link href="/changelog" className="hover:underline">Changelog</Link></li>
+                    <li><Link href="/support" className="hover:underline">Support</Link></li>
+                  </ul>
+                </div>
 
-              {/* Column 2: Contact */}
-              <div>
-                <h3 className="font-semibold mb-2">Contact</h3>
-                <p>
-                  <a href="mailto:support@cashduezy.com" className="underline">
-                    support@cashduezy.com
-                  </a>
-                </p>
-              </div>
+                {/* Column 2: Contact */}
+                <div>
+                  <h3 className="font-semibold mb-2">Contact</h3>
+                  <p>
+                    <a href="mailto:support@cashduezy.com" className="underline">
+                      support@cashduezy.com
+                    </a>
+                  </p>
+                </div>
 
-              {/* Column 3: Legal / Rights */}
-              <div className="text-gray-600 dark:text-gray-500 md:text-right space-y-2">
-                <p>&copy; {new Date().getFullYear()} CashDuezy. All rights reserved.</p>
-                <div className="flex gap-4 justify-center md:justify-end text-sm">
-                  <a href="/privacy" className="hover:underline">Privacy Policy</a>
-                  <a href="/terms" className="hover:underline">Terms of Service</a>
+                {/* Column 3: Legal / Rights */}
+                <div className="text-gray-600 dark:text-gray-500 md:text-right space-y-2">
+                  <p>&copy; {new Date().getFullYear()} CashDuezy. All rights reserved.</p>
+                  <div className="flex gap-4 justify-center md:justify-end text-sm">
+                    <a href="/privacy" className="hover:underline">Privacy Policy</a>
+                    <a href="/terms" className="hover:underline">Terms of Service</a>
+                  </div>
                 </div>
               </div>
-            </div>
-          </footer>
-        </HideOnDashboard>
+            </footer>
+          </HideOnDashboard>
+        </Suspense>
       </body>
     </html>
   );
