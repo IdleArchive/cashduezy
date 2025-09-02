@@ -4,7 +4,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import HeaderClient from "./HeaderClient";
 import HideOnDashboard from "./HideOnDashboard";
-import FooterClient from "./FooterClient"; // site-wide legal buttons
 
 // --- Base URL configuration (switches automatically for prod/dev) ---
 const baseUrl =
@@ -72,7 +71,6 @@ export const metadata: Metadata = {
  * - Early theme handling (dark/light/system)
  * - Header (hidden on /dashboard pages)
  * - Footer (hidden on /dashboard pages)
- * - Global legal modal support (via FooterClient)
  * - SEO metadata from above
  */
 export default function RootLayout({
@@ -83,8 +81,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        {/* --- Early Theme Application Script ---
-             Ensures dark/light mode is applied before content flashes */}
+        {/* --- Early Theme Application Script --- */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -129,36 +126,12 @@ export default function RootLayout({
               <div>
                 <h3 className="font-semibold mb-2">Company</h3>
                 <ul className="space-y-1">
-                  <li>
-                    <Link href="/" className="hover:underline">
-                      Home
-                    </Link>
-                  </li>
-                  <li>
-                    <Link href="/pricing" className="hover:underline">
-                      Pricing
-                    </Link>
-                  </li>
-                  <li>
-                    <Link href="/dashboard" className="hover:underline">
-                      Dashboard
-                    </Link>
-                  </li>
-                  <li>
-                    <Link href="/faq" className="hover:underline">
-                      FAQ
-                    </Link>
-                  </li>
-                  <li>
-                    <Link href="/changelog" className="hover:underline">
-                      Changelog
-                    </Link>
-                  </li>
-                  <li>
-                    <Link href="/support" className="hover:underline">
-                      Support
-                    </Link>
-                  </li>
+                  <li><Link href="/" className="hover:underline">Home</Link></li>
+                  <li><Link href="/pricing" className="hover:underline">Pricing</Link></li>
+                  <li><Link href="/dashboard" className="hover:underline">Dashboard</Link></li>
+                  <li><Link href="/faq" className="hover:underline">FAQ</Link></li>
+                  <li><Link href="/changelog" className="hover:underline">Changelog</Link></li>
+                  <li><Link href="/support" className="hover:underline">Support</Link></li>
                 </ul>
               </div>
 
@@ -166,23 +139,19 @@ export default function RootLayout({
               <div>
                 <h3 className="font-semibold mb-2">Contact</h3>
                 <p>
-                  <a
-                    href="mailto:support@cashduezy.com"
-                    className="underline"
-                  >
+                  <a href="mailto:support@cashduezy.com" className="underline">
                     support@cashduezy.com
                   </a>
                 </p>
               </div>
 
-              {/* Column 3: Legal / Rights (copyright + buttons) */}
+              {/* Column 3: Legal / Rights */}
               <div className="text-gray-600 dark:text-gray-500 md:text-right space-y-2">
-                <p>
-                  &copy; {new Date().getFullYear()} CashDuezy. All rights
-                  reserved.
-                </p>
-                {/* FooterClient handles Privacy + Terms modals site-wide */}
-                <FooterClient className="flex gap-4 justify-center md:justify-end" />
+                <p>&copy; {new Date().getFullYear()} CashDuezy. All rights reserved.</p>
+                <div className="flex gap-4 justify-center md:justify-end text-sm">
+                  <a href="/privacy" className="hover:underline">Privacy Policy</a>
+                  <a href="/terms" className="hover:underline">Terms of Service</a>
+                </div>
               </div>
             </div>
           </footer>
