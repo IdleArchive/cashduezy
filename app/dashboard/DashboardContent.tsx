@@ -105,6 +105,8 @@ interface Subscription {
   vendors?: { name: string };
   cancel_url?: string | null;
   created_at?: string;
+  status?: "active" | "cancelled";   
+  cancel_requested_at?: string | null;
 }
 
 // Free plan limit for active services (by subscription count)
@@ -786,6 +788,48 @@ function showRenewalReminders(subs: Subscription[]) {
     });
     setSaving(false);
   };
+// Cancel subscription (stub)
+const handleCancelStub = async (id: string, name: string) => {
+  const { error } = await supabase
+    .from("subscriptions")
+    .update({
+      status: "cancelled",
+      cancel_requested_at: new Date().toISOString(),
+    })
+    .eq("id", id);
+
+  if (error) {
+    toast.error(`Failed to cancel ${name}`);
+    return;
+  }
+
+  setSubscriptions((prev) =>
+    prev.map((s) => (s.id === id ? { ...s, status: "cancelled" } : s))
+  );
+
+  toast.success(`${name} marked as cancelled. Follow provider instructions to finalize.`);
+};
+// Undo cancel
+const handleUndoCancel = async (id: string, name: string) => {
+  const { error } = await supabase
+    .from("subscriptions")
+    .update({
+      status: "active",
+      cancel_requested_at: null,
+    })
+    .eq("id", id);
+
+  if (error) {
+    toast.error(`Failed to undo cancel for ${name}`);
+    return;
+  }
+
+  setSubscriptions((prev) =>
+    prev.map((s) => (s.id === id ? { ...s, status: "active" } : s))
+  );
+
+  toast.success(`${name} restored as active`);
+};
 
   // Delete subscription
   const handleDeleteSubscription = async (id: string, name: string) => {
@@ -1451,32 +1495,81 @@ const handleExportPDF = () => {
                     {displaySubscriptions.map((sub) => {
                       const meta = renewalMeta(sub);
                       return (
-                        <li key={sub.id} className="py-3 flex justify-between items-center gap-3">
-                          <div className="flex-1 min-w-0">
-                            <h3 className={`${isDark ? "text-violet-300" : "text-indigo-600"} font-medium`}>{sub.name}</h3>
-                            <p className={`${isDark ? "text-gray-400" : "text-gray-500"} text-xs capitalize`}>
-                              {sub.cadence} • {meta.dueLabel}
-                            </p>
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <span className={`${isDark ? "text-emerald-400" : "text-green-600"} font-semibold whitespace-nowrap`}>
-                              {sub.currency} {sub.amount.toFixed(2)}
-                            </span>
-                            <button onClick={() => handleEditSubscription(sub)} className={`p-2 rounded-md ${neutralButton}`} aria-label={`Edit ${sub.name}`}>
-                              <Edit className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => handleInitiateDelete(sub)}
-                              disabled={deletingId === sub.id}
-                              className={`p-2 rounded-md ${
-                                isDark ? "bg-rose-900/40 hover:bg-rose-900/60 text-rose-300 border border-rose-800/40" : "bg-red-100 hover:bg-red-200 text-red-700 border border-red-300"
-                              }`}
-                              aria-label={`Delete ${sub.name}`}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </li>
+<li
+  key={sub.id}
+  className={`py-3 flex justify-between items-center gap-3 ${
+    sub.status === "cancelled" ? "opacity-60 line-through" : ""
+  }`}
+>
+  {/* Left side: service name + cadence */}
+  <div className="flex-1 min-w-0">
+    <h3 className={`${isDark ? "text-violet-300" : "text-indigo-600"} font-medium`}>
+      {sub.name}
+    </h3>
+    <p className={`${isDark ? "text-gray-400" : "text-gray-500"} text-xs capitalize`}>
+      {sub.cadence} • {meta.dueLabel}
+    </p>
+  </div>
+
+  {/* Right side: price + actions */}
+  <div className="flex items-center gap-3">
+    <span className={`${isDark ? "text-emerald-400" : "text-green-600"} font-semibold whitespace-nowrap`}>
+      {sub.currency} {sub.amount.toFixed(2)}
+    </span>
+
+    {/* Edit */}
+    <button
+      onClick={() => handleEditSubscription(sub)}
+      className={`p-2 rounded-md ${neutralButton}`}
+      aria-label={`Edit ${sub.name}`}
+    >
+      <Edit className="w-4 h-4" />
+    </button>
+
+{/* Cancel / Undo */}
+{sub.status === "cancelled" ? (
+  <button
+    onClick={() => handleUndoCancel(sub.id, sub.name)}
+    className={`p-2 rounded-md ${
+      isDark
+        ? "bg-green-900/40 hover:bg-green-900/60 text-green-300 border border-green-800/40"
+        : "bg-green-100 hover:bg-green-200 text-green-700 border border-green-300"
+    }`}
+    aria-label={`Undo cancel for ${sub.name}`}
+  >
+    ↺
+  </button>
+) : (
+  <button
+    onClick={() => handleCancelStub(sub.id, sub.name)}
+    className={`p-2 rounded-md ${
+      isDark
+        ? "bg-yellow-900/40 hover:bg-yellow-900/60 text-yellow-300 border border-yellow-800/40"
+        : "bg-yellow-100 hover:bg-yellow-200 text-yellow-700 border border-yellow-300"
+    }`}
+    aria-label={`Cancel ${sub.name}`}
+  >
+    ✕
+  </button>
+)}
+
+
+    {/* Delete */}
+    <button
+      onClick={() => handleInitiateDelete(sub)}
+      disabled={deletingId === sub.id}
+      className={`p-2 rounded-md ${
+        isDark
+          ? "bg-rose-900/40 hover:bg-rose-900/60 text-rose-300 border border-rose-800/40"
+          : "bg-red-100 hover:bg-red-200 text-red-700 border border-red-300"
+      }`}
+      aria-label={`Delete ${sub.name}`}
+    >
+      <Trash2 className="w-4 h-4" />
+    </button>
+  </div>
+</li>
+
                       );
                     })}
                   </ul>
