@@ -1,14 +1,13 @@
-﻿// app/dashboard/page.tsx
-"use client";
+﻿"use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
-import { Suspense } from "react";
 import DashboardContent from "./DashboardContent";
 
 export default function DashboardPageWrapper() {
   const router = useRouter();
+
   const [checking, setChecking] = useState(true);
   const [loggedIn, setLoggedIn] = useState(false);
 
@@ -21,7 +20,7 @@ export default function DashboardPageWrapper() {
 
         if (!session) {
           // 🚪 If no session, send user back to homepage
-          router.push("/");
+          router.replace("/");
         } else {
           setLoggedIn(true);
         }
@@ -46,10 +45,10 @@ export default function DashboardPageWrapper() {
 
   // --- Redirecting state ---
   if (!loggedIn) {
-    return null; // ✅ Don’t show a fake page
+    return null; // ✅ Don’t render anything while redirecting
   }
 
-  // --- Dashboard with custom header + content ---
+  // --- Dashboard with suspense fallback ---
   return (
     <Suspense
       fallback={

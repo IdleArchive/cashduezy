@@ -7,6 +7,7 @@ export async function middleware(req: NextRequest) {
   const res = NextResponse.next();
 
   try {
+    // Attach Supabase client
     const supabase = createMiddlewareClient({ req, res });
     const {
       data: { session },
@@ -14,20 +15,36 @@ export async function middleware(req: NextRequest) {
 
     const { pathname } = req.nextUrl;
 
-    // If a logged-in user hits the homepage, send them to the dashboard
+    // --- CASE 1: Logged-in users hitting homepage -> redirect to dashboard
     if (pathname === "/" && session) {
       const url = req.nextUrl.clone();
       url.pathname = "/dashboard";
       return NextResponse.redirect(url);
     }
 
-    // NOTE: We intentionally do NOT block /dashboard here.
-    // Let the page guard handle unauthenticated users to avoid race conditions.
+    // --- CASE 2: Logged-in users hitting /login -> redirect to dashboard
+    if (pathname === "/login" && session) {
+      const url = req.nextUrl.clone();
+      url.pathname = "/dashboard";
+      return NextResponse.redirect(url);
+    }
+
+    // --- CASE 3: Guests at homepage -> stay on "/"
+    if (pathname === "/" && !session) {
+      return res;
+    }
+
+    // --- CASE 4: Guests at /login -> allow them to see login page
+    if (pathname === "/login" && !session) {
+      return res;
+    }
+
+    // --- CASE 5: Everything else -> pass through
+    return res;
   } catch (err) {
     console.error("Middleware error:", err);
+    return res;
   }
-
-  return res;
 }
 
 // ✅ Run middleware on everything EXCEPT api, static assets, AND sitemap/robots

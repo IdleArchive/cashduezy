@@ -2,9 +2,9 @@
 import "../globals.css";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Suspense } from "react"; // ✅ for components that may use useSearchParams
+import { Suspense } from "react";
 
-// Match root baseUrl logic for consistency
+// --- Base URL configuration ---
 const baseUrl =
   process.env.NODE_ENV === "production"
     ? "https://www.cashduezy.com"
@@ -65,18 +65,18 @@ export default function DashboardLayout({
                  bg-gray-50 text-gray-800
                  dark:bg-gray-950 dark:text-gray-100"
     >
-      {/* Main: wrapped in Suspense in case children use useSearchParams() */}
+      {/* Main content wrapped in Suspense */}
       <Suspense fallback={null}>
         <main className="flex-1">{children}</main>
       </Suspense>
 
-      {/* Footer (static links; no FooterClient) */}
-      <footer className="border-t border-gray-200 dark:border-gray-800 py-10 text-sm">
+      {/* Footer */}
+      <footer className="bg-gray-950 border-t border-gray-800 py-10 text-sm">
         <div className="max-w-6xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Column 1: Company navigation */}
           <div>
-            <h3 className="font-semibold mb-2">Company</h3>
-            <ul className="space-y-1">
+            <h3 className="font-semibold mb-2 text-white">Company</h3>
+            <ul className="space-y-1 text-white">
               <li><Link href="/" className="hover:underline">Home</Link></li>
               <li><Link href="/pricing" className="hover:underline">Pricing</Link></li>
               <li><Link href="/dashboard" className="hover:underline">Dashboard</Link></li>
@@ -88,20 +88,20 @@ export default function DashboardLayout({
 
           {/* Column 2: Contact */}
           <div>
-            <h3 className="font-semibold mb-2">Contact</h3>
+            <h3 className="font-semibold mb-2 text-white">Contact</h3>
             <p>
-              <a href="mailto:support@cashduezy.com" className="underline">
+              <a href="mailto:support@cashduezy.com" className="underline text-white">
                 support@cashduezy.com
               </a>
             </p>
           </div>
 
           {/* Column 3: Legal */}
-          <div className="text-gray-600 dark:text-gray-500 md:text-right space-y-2">
+          <div className="text-gray-500 md:text-right space-y-2">
             <p>&copy; {new Date().getFullYear()} CashDuezy. All rights reserved.</p>
             <div className="flex gap-4 justify-center md:justify-end text-sm">
-              <a href="/privacy" className="hover:underline">Privacy Policy</a>
-              <a href="/terms" className="hover:underline">Terms of Service</a>
+              <Link href="/privacy" className="hover:underline">Privacy Policy</Link>
+              <Link href="/terms" className="hover:underline">Terms of Service</Link>
             </div>
           </div>
         </div>
