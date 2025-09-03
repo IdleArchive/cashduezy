@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 import HeaderClient from "./HeaderClient";
 import FooterClient from "./FooterClient";
 import HideOnDashboard from "./HideOnDashboard";
-import Script from "next/script"; // ✅ add this
+import Script from "next/script"; // ✅ added
 
 // --- Base URL configuration ---
 const baseUrl =
@@ -61,7 +61,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        {/* ✅ Existing theme script */}
+        {/* ✅ Existing theme detection */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -85,9 +85,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           }}
         />
 
-        {/* ✅ Google Analytics */}
+        {/* ✅ Google Analytics with your tag */}
         <Script
-          src="https://www.googletagmanager.com/gtag/js?id=G-TG8JWRNTL"
+          src="https://www.googletagmanager.com/gtag/js?id=G-TG0JWRHNTL"
           strategy="afterInteractive"
         />
         <Script id="google-analytics" strategy="afterInteractive">
@@ -95,7 +95,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             window.dataLayer = window.dataLayer || [];
             function gtag(){dataLayer.push(arguments);}
             gtag('js', new Date());
-            gtag('config', 'G-TG8JWRNTL');
+            gtag('config', 'G-TG0JWRHNTL');
           `}
         </Script>
       </head>
