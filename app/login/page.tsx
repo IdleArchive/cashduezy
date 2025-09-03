@@ -73,12 +73,29 @@ export default function LoginPage() {
       return;
     }
 
+    // ✅ Verify captcha token with backend
+    try {
+      const res = await fetch("/api/verify-captcha", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: captchaToken }),
+      });
+
+      const verify = await res.json();
+      if (!verify.success) {
+        toast.error("Captcha verification failed");
+        setSignUpSaving(false);
+        return;
+      }
+    } catch (err) {
+      toast.error("Captcha check error, please retry");
+      setSignUpSaving(false);
+      return;
+    }
+
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: {
-        captchaToken, // ✅ pass captcha token to Supabase
-      },
     });
 
     if (error || !data?.user) {
@@ -107,6 +124,26 @@ export default function LoginPage() {
       return;
     }
 
+    // ✅ Verify captcha before sending reset email
+    try {
+      const res = await fetch("/api/verify-captcha", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: captchaToken }),
+      });
+
+      const verify = await res.json();
+      if (!verify.success) {
+        toast.error("Captcha verification failed");
+        setForgotSaving(false);
+        return;
+      }
+    } catch (err) {
+      toast.error("Captcha check error, please retry");
+      setForgotSaving(false);
+      return;
+    }
+
     try {
       const redirectTo =
         typeof window !== "undefined"
@@ -115,7 +152,6 @@ export default function LoginPage() {
 
       const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
         redirectTo,
-        captchaToken, // ✅ pass captcha token
       });
 
       if (error) console.error("Reset password error:", error);
@@ -235,7 +271,7 @@ export default function LoginPage() {
             {/* ✅ Captcha Widget */}
             <div className="mb-3">
               <HCaptcha
-                sitekey={process.env.NEXT_PUBLIC_HCAPTCHA_SITE_KEY!}
+                sitekey={process.env.NEXT_PUBLIC_HCAPTCHA_SITEKEY!}
                 onVerify={(token: string) => setCaptchaToken(token)}
                 ref={captchaRef}
               />
@@ -278,7 +314,7 @@ export default function LoginPage() {
             {/* ✅ Captcha Widget */}
             <div className="mb-3">
               <HCaptcha
-                sitekey={process.env.NEXT_PUBLIC_HCAPTCHA_SITE_KEY!}
+                sitekey={process.env.NEXT_PUBLIC_HCAPTCHA_SITEKEY!}
                 onVerify={(token: string) => setCaptchaToken(token)}
                 ref={captchaRef}
               />
