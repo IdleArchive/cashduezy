@@ -3,7 +3,8 @@ import "./globals.css";
 import type { Metadata } from "next";
 import HeaderClient from "./HeaderClient";
 import FooterClient from "./FooterClient";
-import HideOnDashboard from "./HideOnDashboard"; // ✅ use for conditional render
+import HideOnDashboard from "./HideOnDashboard";
+import Script from "next/script"; // ✅ add this
 
 // --- Base URL configuration ---
 const baseUrl =
@@ -60,6 +61,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        {/* ✅ Existing theme script */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -82,6 +84,20 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             `,
           }}
         />
+
+        {/* ✅ Google Analytics */}
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-TG8JWRNTL"
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-TG8JWRNTL');
+          `}
+        </Script>
       </head>
       <body
         className="font-sans flex flex-col min-h-screen
