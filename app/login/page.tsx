@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { LogIn, Eye, EyeOff } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import toast, { Toaster } from "react-hot-toast";
+import HCaptcha from "@hcaptcha/react-hcaptcha";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -24,6 +25,10 @@ export default function LoginPage() {
   const [isForgotMode, setIsForgotMode] = useState(false);
   const [isSignUpMode, setIsSignUpMode] = useState(false);
 
+  // ----- Captcha -----
+  const captchaRef = useRef<HCaptcha>(null);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+
   // ----- Login -----
   const handleLogin = async () => {
     setLoginSaving(true);
@@ -35,7 +40,10 @@ export default function LoginPage() {
       return;
     }
 
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
 
     if (error || !data?.user) {
       toast.error(error?.message || "Login failed");
@@ -59,7 +67,19 @@ export default function LoginPage() {
       return;
     }
 
-    const { data, error } = await supabase.auth.signUp({ email, password });
+    if (!captchaToken) {
+      toast.error("Please complete the Captcha");
+      setSignUpSaving(false);
+      return;
+    }
+
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        captchaToken, // ✅ pass captcha token to Supabase
+      },
+    });
 
     if (error || !data?.user) {
       toast.error(error?.message || "Sign up failed");
@@ -81,10 +101,23 @@ export default function LoginPage() {
       return;
     }
 
+    if (!captchaToken) {
+      toast.error("Please complete the Captcha");
+      setForgotSaving(false);
+      return;
+    }
+
     try {
       const redirectTo =
-        typeof window !== "undefined" ? `${window.location.origin}/update-password` : undefined;
-      const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail, { redirectTo });
+        typeof window !== "undefined"
+          ? `${window.location.origin}/update-password`
+          : undefined;
+
+      const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
+        redirectTo,
+        captchaToken, // ✅ pass captcha token
+      });
+
       if (error) console.error("Reset password error:", error);
       toast.success("If an account exists, a reset link has been sent.");
       setIsForgotMode(false);
@@ -110,7 +143,9 @@ export default function LoginPage() {
               type="email"
               placeholder="Email"
               value={loginForm.email}
-              onChange={(e) => setLoginForm({ ...loginForm, email: e.target.value })}
+              onChange={(e) =>
+                setLoginForm({ ...loginForm, email: e.target.value })
+              }
               className="w-full px-3 py-2 rounded-md border bg-gray-800 border-gray-700 text-gray-100 mb-3"
             />
             <div className="relative mb-3">
@@ -118,7 +153,9 @@ export default function LoginPage() {
                 type={showLoginPassword ? "text" : "password"}
                 placeholder="Password"
                 value={loginForm.password}
-                onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
+                onChange={(e) =>
+                  setLoginForm({ ...loginForm, password: e.target.value })
+                }
                 className="w-full px-3 py-2 rounded-md border bg-gray-800 border-gray-700 text-gray-100"
               />
               <button
@@ -126,7 +163,11 @@ export default function LoginPage() {
                 onClick={() => setShowLoginPassword(!showLoginPassword)}
                 className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500"
               >
-                {showLoginPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                {showLoginPassword ? (
+                  <EyeOff className="w-4 h-4" />
+                ) : (
+                  <Eye className="w-4 h-4" />
+                )}
               </button>
             </div>
             <button
@@ -137,12 +178,18 @@ export default function LoginPage() {
               {loginSaving ? "Logging in..." : "Log In"}
             </button>
             <div className="text-sm text-center mt-4 space-y-2">
-              <button onClick={() => setIsForgotMode(true)} className="underline text-violet-400">
+              <button
+                onClick={() => setIsForgotMode(true)}
+                className="underline text-violet-400"
+              >
                 Forgot password?
               </button>
               <p>
                 Don’t have an account?{" "}
-                <button onClick={() => setIsSignUpMode(true)} className="underline text-violet-400">
+                <button
+                  onClick={() => setIsSignUpMode(true)}
+                  className="underline text-violet-400"
+                >
                   Sign Up
                 </button>
               </p>
@@ -157,7 +204,9 @@ export default function LoginPage() {
               type="email"
               placeholder="Email"
               value={signUpForm.email}
-              onChange={(e) => setSignUpForm({ ...signUpForm, email: e.target.value })}
+              onChange={(e) =>
+                setSignUpForm({ ...signUpForm, email: e.target.value })
+              }
               className="w-full px-3 py-2 rounded-md border bg-gray-800 border-gray-700 text-gray-100 mb-3"
             />
             <div className="relative mb-3">
@@ -165,7 +214,9 @@ export default function LoginPage() {
                 type={showSignUpPassword ? "text" : "password"}
                 placeholder="Password"
                 value={signUpForm.password}
-                onChange={(e) => setSignUpForm({ ...signUpForm, password: e.target.value })}
+                onChange={(e) =>
+                  setSignUpForm({ ...signUpForm, password: e.target.value })
+                }
                 className="w-full px-3 py-2 rounded-md border bg-gray-800 border-gray-700 text-gray-100"
               />
               <button
@@ -173,19 +224,40 @@ export default function LoginPage() {
                 onClick={() => setShowSignUpPassword(!showSignUpPassword)}
                 className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500"
               >
-                {showSignUpPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                {showSignUpPassword ? (
+                  <EyeOff className="w-4 h-4" />
+                ) : (
+                  <Eye className="w-4 h-4" />
+                )}
               </button>
             </div>
+
+            {/* ✅ Captcha Widget */}
+            <div className="mb-3">
+              <HCaptcha
+                sitekey={process.env.NEXT_PUBLIC_HCAPTCHA_SITE_KEY!}
+                onVerify={(token: string) => setCaptchaToken(token)}
+                ref={captchaRef}
+              />
+            </div>
+
             <button
               onClick={handleSignUp}
               disabled={signUpSaving}
               className="w-full py-2 rounded-md bg-emerald-600 hover:bg-emerald-500 font-medium"
             >
-              {signUpSaving ? "Creating..." : isProSignup ? "Sign Up & Upgrade" : "Sign Up"}
+              {signUpSaving
+                ? "Creating..."
+                : isProSignup
+                ? "Sign Up & Upgrade"
+                : "Sign Up"}
             </button>
             <div className="text-sm text-center mt-4">
               Already have an account?{" "}
-              <button onClick={() => setIsSignUpMode(false)} className="underline text-violet-400">
+              <button
+                onClick={() => setIsSignUpMode(false)}
+                className="underline text-violet-400"
+              >
                 Log In
               </button>
             </div>
@@ -202,6 +274,16 @@ export default function LoginPage() {
               onChange={(e) => setForgotEmail(e.target.value)}
               className="w-full px-3 py-2 rounded-md border bg-gray-800 border-gray-700 text-gray-100 mb-4"
             />
+
+            {/* ✅ Captcha Widget */}
+            <div className="mb-3">
+              <HCaptcha
+                sitekey={process.env.NEXT_PUBLIC_HCAPTCHA_SITE_KEY!}
+                onVerify={(token: string) => setCaptchaToken(token)}
+                ref={captchaRef}
+              />
+            </div>
+
             <button
               onClick={handleForgotPassword}
               disabled={forgotSaving}
@@ -210,7 +292,10 @@ export default function LoginPage() {
               {forgotSaving ? "Sending..." : "Send Reset Link"}
             </button>
             <div className="text-sm text-center mt-4">
-              <button onClick={() => setIsForgotMode(false)} className="underline text-violet-400">
+              <button
+                onClick={() => setIsForgotMode(false)}
+                className="underline text-violet-400"
+              >
                 Back to Login
               </button>
             </div>
