@@ -11,6 +11,7 @@ import {
   Loader2,
   Trash2,
   ArrowLeft,
+  FileText,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import Link from "next/link";
@@ -110,7 +111,7 @@ export default function ProfilePage() {
   const [newEmail, setNewEmail] = useState("");
   const [newPassword, setNewPassword] = useState("");
 
-  // Loading states (separate for better UX)
+  // Loading states
   const [loadingEmail, setLoadingEmail] = useState(false);
   const [loadingPassword, setLoadingPassword] = useState(false);
   const [loadingLogout, setLoadingLogout] = useState(false);
@@ -151,7 +152,6 @@ export default function ProfilePage() {
       toast.error("Enter a new email");
       return;
     }
-    // very light validation
     if (!/^\S+@\S+\.\S+$/.test(newEmail)) {
       toast.error("Please enter a valid email address");
       return;
@@ -195,47 +195,43 @@ export default function ProfilePage() {
     }
   };
 
-const handleDeleteAccount = async () => {
-  try {
-    setLoadingDelete(true);
+  const handleDeleteAccount = async () => {
+    try {
+      setLoadingDelete(true);
 
-    // Get current user
-    const { data, error } = await supabase.auth.getUser();
-    if (error || !data.user) {
-      toast.error("Failed to fetch user");
-      return;
+      const { data, error } = await supabase.auth.getUser();
+      if (error || !data.user) {
+        toast.error("Failed to fetch user");
+        return;
+      }
+
+      const res = await fetch("/api/delete-account", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: data.user.id }),
+      });
+
+      const result = await res.json();
+      if (!res.ok) {
+        toast.error(result.error || "Failed to delete account");
+        return;
+      }
+
+      toast.success("Account deleted successfully");
+      setShowDeleteConfirm(false);
+
+      await supabase.auth.signOut();
+      router.push("/goodbye");
+    } catch {
+      toast.error("Unexpected error");
+    } finally {
+      setLoadingDelete(false);
     }
-
-    // Call secure API route
-    const res = await fetch("/api/delete-account", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId: data.user.id }),
-    });
-
-    const result = await res.json();
-    if (!res.ok) {
-      toast.error(result.error || "Failed to delete account");
-      return;
-    }
-
-    toast.success("Account deleted successfully");
-    setShowDeleteConfirm(false);
-
-    // Log out locally
-    await supabase.auth.signOut();
-    router.push("/goodbye"); // or redirect to "/" if you don’t want a goodbye page
-  } catch (err) {
-    toast.error("Unexpected error");
-  } finally {
-    setLoadingDelete(false);
-  }
-};
+  };
 
   // ===== UI =====
   return (
     <main className="min-h-screen bg-gray-950 text-gray-100">
-      {/* Center the card better on the page */}
       <div className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-5xl items-start justify-center px-4 py-8 md:items-center md:px-6 md:py-12">
         <div className="w-full max-w-3xl overflow-hidden rounded-2xl border border-gray-800 bg-gray-900 shadow-xl">
           {/* Header */}
@@ -265,13 +261,10 @@ const handleDeleteAccount = async () => {
               />
             </section>
 
-            {/* Update email (form -> Enter key submits) */}
+            {/* Update email */}
             <section className="space-y-3">
               <form onSubmit={handleEmailSubmit} className="flex gap-2">
                 <div className="flex-1">
-                  <label className="sr-only" htmlFor="newEmail">
-                    New email
-                  </label>
                   <input
                     id="newEmail"
                     type="email"
@@ -291,13 +284,10 @@ const handleDeleteAccount = async () => {
               </p>
             </section>
 
-            {/* Update password (form -> Enter key submits) */}
+            {/* Update password */}
             <section className="space-y-3">
               <form onSubmit={handlePasswordSubmit} className="flex gap-2">
                 <div className="flex-1">
-                  <label className="sr-only" htmlFor="newPassword">
-                    New password
-                  </label>
                   <input
                     id="newPassword"
                     type="password"
@@ -316,6 +306,19 @@ const handleDeleteAccount = async () => {
                 Use at least 8 characters with a mix of letters, numbers, and symbols.
               </p>
             </section>
+
+            {/* Blog Admin (only for your email) */}
+            {email === "b.sasuta@gmail.com" && (
+              <section className="border-t border-gray-800 pt-6">
+                <Link
+                  href="/dashboard/blog"
+                  className="inline-flex items-center gap-2 rounded-lg bg-purple-600 px-4 py-2 text-sm font-semibold text-white hover:bg-purple-700"
+                >
+                  <FileText className="h-4 w-4" />
+                  Blog Admin
+                </Link>
+              </section>
+            )}
 
             {/* Account actions */}
             <section className="flex items-center justify-between border-t border-gray-800 pt-6">
