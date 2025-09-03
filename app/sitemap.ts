@@ -1,6 +1,6 @@
 // /app/sitemap.ts
 import { MetadataRoute } from "next";
-import { getSupabaseServer } from "@/lib/supabaseServer";
+import { supabasePublic } from "@/lib/supabasePublic"; // ✅ public client for anon access
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl =
@@ -8,7 +8,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       ? "https://www.cashduezy.com"
       : "http://localhost:3000";
 
-  // === Static core pages (what you had in sitemap-0.xml) ===
+  // === Static core pages (replaces sitemap-0.xml) ===
   const staticPages: MetadataRoute.Sitemap = [
     { url: `${baseUrl}/`, lastModified: new Date(), changeFrequency: "daily", priority: 0.7 },
     { url: `${baseUrl}/login`, lastModified: new Date(), changeFrequency: "daily", priority: 0.7 },
@@ -23,23 +23,26 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ];
 
   // === Dynamic blog posts from Supabase ===
-  const supabase = await getSupabaseServer();
-  const { data: posts, error } = await supabase
-    .from("blogs")
-    .select("slug, updated_at")
-    .eq("is_published", true);
+  let blogPages: MetadataRoute.Sitemap = [];
+  try {
+    const { data: posts, error } = await supabasePublic
+      .from("blogs")
+      .select("slug, updated_at")
+      .eq("is_published", true);
 
-  if (error) {
-    console.error("[SITEMAP] Error fetching blog posts:", error.message);
+    if (error) {
+      console.error("[SITEMAP] Error fetching blog posts:", error.message);
+    } else if (posts) {
+      blogPages = posts.map((post) => ({
+        url: `${baseUrl}/blog/${post.slug}`,
+        lastModified: new Date(post.updated_at),
+        changeFrequency: "weekly",
+        priority: 0.9, // blogs get higher priority for SEO
+      }));
+    }
+  } catch (err) {
+    console.error("[SITEMAP] Unexpected error fetching blog posts:", err);
   }
-
-  const blogPages: MetadataRoute.Sitemap =
-    posts?.map((post) => ({
-      url: `${baseUrl}/blog/${post.slug}`,
-      lastModified: new Date(post.updated_at),
-      changeFrequency: "weekly",
-      priority: 0.9, // blogs get higher priority
-    })) ?? [];
 
   return [...staticPages, ...blogPages];
 }

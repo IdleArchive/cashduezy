@@ -1,8 +1,8 @@
 // /app/blog/page.tsx
 import Image from "next/image";
 import Link from "next/link";
-import { Metadata } from "next";
-import { getSupabaseServer } from "@/lib/supabaseServer";
+import type { Metadata } from "next";
+import { supabasePublic } from "@/lib/supabasePublic"; // ✅ public client
 
 export const metadata: Metadata = {
   title: "Blog | CashDuezy",
@@ -31,18 +31,22 @@ function formatDate(iso: string) {
 }
 
 async function getPosts(): Promise<BlogListItem[]> {
-  const supabase = await getSupabaseServer();
-  const { data, error } = await supabase
-    .from("blogs")
-    .select("id, title, slug, excerpt, cover_image_url, author, published_at")
-    .eq("is_published", true)
-    .order("published_at", { ascending: false });
+  try {
+    const { data, error } = await supabasePublic
+      .from("blogs")
+      .select("id, title, slug, excerpt, cover_image_url, author, published_at")
+      .eq("is_published", true)
+      .order("published_at", { ascending: false });
 
-  if (error) {
-    console.error("[BLOG] list error:", error.message);
+    if (error) {
+      console.error("[BLOG] list error:", error.message);
+      return [];
+    }
+    return (data ?? []) as BlogListItem[];
+  } catch (err: any) {
+    console.error("[BLOG] unexpected list error:", err.message);
     return [];
   }
-  return (data ?? []) as BlogListItem[];
 }
 
 export default async function BlogIndexPage() {
@@ -62,7 +66,10 @@ export default async function BlogIndexPage() {
       ) : (
         <ul className="grid gap-6 sm:grid-cols-2">
           {posts.map((post) => (
-            <li key={post.id} className="group rounded-2xl border p-4">
+            <li
+              key={post.id}
+              className="group rounded-2xl border border-gray-800 bg-gray-900 p-4 shadow-sm transition hover:shadow-lg"
+            >
               <Link href={`/blog/${post.slug}`} className="block">
                 {post.cover_image_url ? (
                   <div className="relative mb-4 aspect-[16/9] overflow-hidden rounded-xl">
@@ -72,11 +79,14 @@ export default async function BlogIndexPage() {
                       fill
                       className="object-cover transition-transform duration-300 group-hover:scale-105"
                       sizes="(max-width: 768px) 100vw, 50vw"
+                      priority={false}
                     />
                   </div>
                 ) : null}
 
-                <h2 className="text-xl font-semibold">{post.title}</h2>
+                <h2 className="text-xl font-semibold group-hover:text-primary">
+                  {post.title}
+                </h2>
                 <div className="mt-1 text-sm text-muted-foreground">
                   By {post.author} • {formatDate(post.published_at)}
                 </div>
