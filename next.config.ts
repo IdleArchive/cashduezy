@@ -9,10 +9,16 @@ const nextConfig: NextConfig = {
   // Good default; keeps React warnings helpful in dev
   reactStrictMode: true,
 
-  // If you later load remote images, add domains here:
-  // images: {
-  //   domains: ["images.unsplash.com", "your-cdn.com"],
-  // },
+  // ✅ Redirect old blog admin link to new location
+  async redirects() {
+    return [
+      {
+        source: "/dashboard/blog",
+        destination: "/blog/new",
+        permanent: true, // 308 redirect, SEO-friendly
+      },
+    ];
+  },
 
   // ✅ Force correct Content-Type for sitemap.xml
   async headers() {
