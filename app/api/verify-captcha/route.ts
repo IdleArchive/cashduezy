@@ -4,42 +4,59 @@ export async function POST(req: Request) {
   try {
     const { token } = await req.json();
 
-    if (!token) {
+    // --- Validate request body ---
+    if (!token || typeof token !== "string") {
       return NextResponse.json(
-        { success: false, error: "Missing captcha token" },
+        { success: false, error: "Missing or invalid captcha token" },
         { status: 400 }
       );
     }
 
     const secret = process.env.HCAPTCHA_SECRET;
     if (!secret) {
+      console.error("❌ Missing HCAPTCHA_SECRET in environment");
       return NextResponse.json(
-        { success: false, error: "Missing hCaptcha secret key" },
+        { success: false, error: "Server misconfiguration: missing secret" },
         { status: 500 }
       );
     }
 
-    // Verify with hCaptcha servers
-    const response = await fetch("https://hcaptcha.com/siteverify", {
+    // --- Verify token with hCaptcha ---
+    const verifyResponse = await fetch("https://hcaptcha.com/siteverify", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: `response=${token}&secret=${secret}`,
+      body: new URLSearchParams({
+        secret,
+        response: token,
+      }).toString(),
     });
 
-    const data = await response.json();
-
-    if (data.success) {
-      return NextResponse.json({ success: true });
-    } else {
+    if (!verifyResponse.ok) {
+      console.error("❌ hCaptcha API error:", verifyResponse.status);
       return NextResponse.json(
-        { success: false, error: data["error-codes"] || "Verification failed" },
-        { status: 400 }
+        { success: false, error: "hCaptcha API unreachable" },
+        { status: 502 }
       );
     }
-  } catch (err) {
-    console.error("Captcha verification error:", err);
+
+    const data = await verifyResponse.json();
+    console.log("🔎 hCaptcha verify result:", data);
+
+    if (data.success === true) {
+      return NextResponse.json({ success: true });
+    }
+
     return NextResponse.json(
-      { success: false, error: "Server error verifying captcha" },
+      {
+        success: false,
+        error: data["error-codes"] || "Captcha verification failed",
+      },
+      { status: 400 }
+    );
+  } catch (err) {
+    console.error("❌ Captcha verification error:", err);
+    return NextResponse.json(
+      { success: false, error: "Unexpected server error verifying captcha" },
       { status: 500 }
     );
   }
