@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import {
   LogOut,
   UserCircle,
-  KeyRound,
   Mail,
   Loader2,
   Trash2,
@@ -100,11 +99,13 @@ function ConfirmModal({
   );
 }
 
-export default function ProfilePage() {
+export default function AccountPage() {
   const router = useRouter();
 
-  // Displayed values
+  // Auth state
   const [email, setEmail] = useState<string>("");
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [authChecked, setAuthChecked] = useState(false);
 
   // Form state
   const [newEmail, setNewEmail] = useState("");
@@ -119,16 +120,57 @@ export default function ProfilePage() {
   // Modal
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  // Fetch current user info
+  // Fetch current user info + admin status
   useEffect(() => {
-    (async () => {
-      const { data, error } = await supabase.auth.getUser();
+    let cancelled = false;
+
+    const checkAuth = async (retry = false) => {
+      const {
+        data: { user },
+        error,
+      } = await supabase.auth.getUser();
+
+      if (cancelled) return;
+
       if (error) {
+        console.error("Auth error:", error.message);
         toast.error("Failed to fetch user");
         return;
       }
-      setEmail(data.user?.email ?? "");
-    })();
+
+      if (!user) {
+        if (!retry) {
+          // wait 500ms and retry once
+          setTimeout(() => checkAuth(true), 500);
+        }
+        return;
+      }
+
+      setEmail(user.email ?? "");
+
+      // 🔎 Check if user is in blog_admins
+      const { data: adminRow, error: adminError } = await supabase
+        .from("blog_admins")
+        .select("user_id")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (cancelled) return;
+
+      if (adminError) {
+        console.error("Error checking blog_admins:", adminError.message);
+      }
+
+      if (adminRow) setIsAdmin(true);
+
+      setAuthChecked(true);
+    };
+
+    checkAuth();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // ===== Handlers =====
@@ -229,6 +271,14 @@ export default function ProfilePage() {
   };
 
   // ===== UI =====
+  if (!authChecked) {
+    return (
+      <main className="max-w-2xl mx-auto p-6">
+        <p className="text-gray-300">Checking authentication...</p>
+      </main>
+    );
+  }
+
   return (
     <main className="min-h-screen bg-gray-950 text-gray-100">
       <div className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-5xl items-start justify-center px-4 py-8 md:items-center md:px-6 md:py-12">
@@ -306,8 +356,8 @@ export default function ProfilePage() {
               </p>
             </section>
 
-            {/* Blog Admin (only for your email) */}
-            {email === "b.sasuta@gmail.com" && (
+            {/* Blog Admin Section */}
+            {isAdmin && (
               <section className="border-t border-gray-800 pt-6">
                 <Link
                   href="/blog/new"

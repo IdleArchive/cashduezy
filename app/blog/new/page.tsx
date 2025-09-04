@@ -13,24 +13,37 @@ export default function NewBlogPost() {
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
+
     const checkAuth = async () => {
+      // 1. Get user
       const {
         data: { user },
         error,
       } = await supabase.auth.getUser();
 
-      if (error || !user) {
-        console.error("Auth error or no user:", error?.message);
+      if (cancelled) return;
+
+      if (error) {
+        console.error("Auth error:", error.message);
         router.push("/login");
         return;
       }
 
-      // 🔎 Check if user is in blog_admins
+      if (!user) {
+        // 👀 Instead of instantly redirecting, wait 500ms and retry once
+        setTimeout(checkAuth, 500);
+        return;
+      }
+
+      // 2. Check if user is in blog_admins
       const { data: adminRow, error: adminError } = await supabase
         .from("blog_admins")
         .select("user_id")
         .eq("user_id", user.id)
         .maybeSingle();
+
+      if (cancelled) return;
 
       if (adminError) {
         console.error("Error checking blog_admins:", adminError.message);
@@ -49,6 +62,10 @@ export default function NewBlogPost() {
     };
 
     checkAuth();
+
+    return () => {
+      cancelled = true;
+    };
   }, [router]);
 
   // --- Form State ---

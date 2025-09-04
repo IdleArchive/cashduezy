@@ -9,13 +9,18 @@ const nextConfig: NextConfig = {
   // Good default; keeps React warnings helpful in dev
   reactStrictMode: true,
 
-  // ✅ Redirect old blog admin link to new location
+  // ✅ Redirects
   async redirects() {
     return [
       {
         source: "/dashboard/blog",
         destination: "/blog/new",
         permanent: true, // 308 redirect, SEO-friendly
+      },
+      {
+        source: "/dashboard/profile",
+        destination: "/dashboard/account",
+        permanent: true, // 308 redirect, safe rename for account page
       },
     ];
   },

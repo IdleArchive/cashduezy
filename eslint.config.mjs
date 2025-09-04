@@ -1,25 +1,44 @@
-import { dirname } from "path";
-import { fileURLToPath } from "url";
-import { FlatCompat } from "@eslint/eslintrc";
+import type { NextConfig } from "next";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-const compat = new FlatCompat({
-  baseDirectory: __dirname,
-});
-
-const eslintConfig = [
-  ...compat.extends("next/core-web-vitals", "next/typescript"),
-  {
-    ignores: [
-      "node_modules/**",
-      ".next/**",
-      "out/**",
-      "build/**",
-      "next-env.d.ts",
-    ],
+const nextConfig: NextConfig = {
+  // Skip ESLint during `next build` on Vercel to avoid Edge runtime issues
+  eslint: {
+    ignoreDuringBuilds: true,
   },
-];
 
-export default eslintConfig;
+  // Good default; keeps React warnings helpful in dev
+  reactStrictMode: true,
+
+  // ✅ Redirects
+  async redirects() {
+    return [
+      {
+        source: "/dashboard/blog",
+        destination: "/blog/new",
+        permanent: true, // 308 redirect, SEO-friendly
+      },
+      {
+        source: "/dashboard/profile",
+        destination: "/dashboard/account",
+        permanent: true, // 308 redirect, safe rename for account page
+      },
+    ];
+  },
+
+  // ✅ Force correct Content-Type for sitemap.xml
+  async headers() {
+    return [
+      {
+        source: "/sitemap.xml",
+        headers: [
+          {
+            key: "Content-Type",
+            value: "application/xml",
+          },
+        ],
+      },
+    ];
+  },
+};
+
+export default nextConfig;
