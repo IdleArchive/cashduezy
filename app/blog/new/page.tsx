@@ -21,14 +21,8 @@ export default function NewBlogPost() {
         error,
       } = await supabase.auth.getUser();
 
-      if (error) {
-        console.error("Auth error:", error.message);
-        router.push("/login");
-        return;
-      }
-
-      if (!user) {
-        console.warn("⚠️ No user logged in");
+      if (error || !user) {
+        console.error("Auth error or no user:", error?.message);
         router.push("/login");
         return;
       }
@@ -51,6 +45,7 @@ export default function NewBlogPost() {
     title: "",
     slug: "",
     excerpt: "",
+    cover_image_url: "",
     content: "",
   });
   const [publishing, setPublishing] = useState(false);
@@ -58,11 +53,10 @@ export default function NewBlogPost() {
   // --- Publish Handler ---
   const handlePublish = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (publishing) return;
     setPublishing(true);
 
-    const { title, slug, excerpt, content } = form;
+    const { title, slug, excerpt, cover_image_url, content } = form;
 
     if (!title.trim() || !slug.trim() || !content.trim()) {
       toast.error("Please fill in all required fields");
@@ -71,14 +65,35 @@ export default function NewBlogPost() {
     }
 
     try {
-      const { error } = await supabase.from("posts").insert([
+      // --- Check for duplicate slug ---
+      const { data: existing, error: slugError } = await supabase
+        .from("blogs")
+        .select("id")
+        .eq("slug", slug.trim())
+        .maybeSingle();
+
+      if (slugError) {
+        console.error("Slug check error:", slugError.message);
+      }
+
+      if (existing) {
+        toast.error("Slug already exists. Please choose another.");
+        setPublishing(false);
+        return;
+      }
+
+      // --- Insert blog post ---
+      const { error } = await supabase.from("blogs").insert([
         {
           title: title.trim(),
           slug: slug.trim(),
-          excerpt: excerpt.trim(),
+          excerpt: excerpt.trim() || null,
+          cover_image_url: cover_image_url.trim() || null,
           content,
           author: "Dev Team",
+          is_published: true,
           published_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
         },
       ]);
 
@@ -145,6 +160,15 @@ export default function NewBlogPost() {
           placeholder="Excerpt (short preview text)"
           value={form.excerpt}
           onChange={(e) => setForm({ ...form, excerpt: e.target.value })}
+          className="w-full px-3 py-2 rounded border bg-gray-800 text-gray-100"
+        />
+
+        {/* Cover Image URL */}
+        <input
+          type="url"
+          placeholder="Cover Image URL (optional)"
+          value={form.cover_image_url}
+          onChange={(e) => setForm({ ...form, cover_image_url: e.target.value })}
           className="w-full px-3 py-2 rounded border bg-gray-800 text-gray-100"
         />
 
