@@ -70,6 +70,7 @@ export default function HeaderClient({ onLoginClick }: HeaderClientProps) {
     { label: "Home", href: "/" },
     { label: "Pricing", href: "/pricing" },
     { label: "Dashboard", href: "/dashboard" },
+    { label: "Blog", href: "/blog" },
     { label: "FAQ", href: "/faq" },
     { label: "Changelog", href: "/changelog" },
     { label: "Support", href: "/support" },

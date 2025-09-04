@@ -14,6 +14,7 @@ export default function FooterClient() {
             <li><Link href="/" className="hover:underline">Home</Link></li>
             <li><Link href="/pricing" className="hover:underline">Pricing</Link></li>
             <li><Link href="/dashboard" className="hover:underline">Dashboard</Link></li>
+            <li><Link href="/blog" className="hover:underline">Blog</Link></li>
             <li><Link href="/faq" className="hover:underline">FAQ</Link></li>
             <li><Link href="/changelog" className="hover:underline">Changelog</Link></li>
             <li><Link href="/support" className="hover:underline">Support</Link></li>
