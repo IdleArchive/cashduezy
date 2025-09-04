@@ -5,8 +5,6 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import toast, { Toaster } from "react-hot-toast";
 
-const ADMIN_UUID = "777d0c66-4664-4b75-8d1c-0d91cd05b9b6"; // your UUID
-
 export default function NewBlogPost() {
   const router = useRouter();
 
@@ -27,7 +25,20 @@ export default function NewBlogPost() {
         return;
       }
 
-      if (user.id !== ADMIN_UUID) {
+      // 🔎 Check if user is in blog_admins
+      const { data: adminRow, error: adminError } = await supabase
+        .from("blog_admins")
+        .select("user_id")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (adminError) {
+        console.error("Error checking blog_admins:", adminError.message);
+        router.push("/login");
+        return;
+      }
+
+      if (!adminRow) {
         console.warn("⚠️ Unauthorized user tried to access blog editor");
         router.push("/login");
         return;
@@ -168,7 +179,9 @@ export default function NewBlogPost() {
           type="url"
           placeholder="Cover Image URL (optional)"
           value={form.cover_image_url}
-          onChange={(e) => setForm({ ...form, cover_image_url: e.target.value })}
+          onChange={(e) =>
+            setForm({ ...form, cover_image_url: e.target.value })
+          }
           className="w-full px-3 py-2 rounded border bg-gray-800 text-gray-100"
         />
 
