@@ -28,7 +28,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
 
   // Captcha
-  const captchaRef = useRef<HCaptcha>(null);
+  const captchaRef = useRef<HCaptcha | null>(null);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
 
   // Prefill returning user email
@@ -44,14 +44,13 @@ export default function LoginPage() {
 
   const maybeRememberEmail = (email: string) => {
     try {
-      if (rememberEmail && email) {
-        localStorage.setItem("lastAuthEmail", email);
-      }
+      if (rememberEmail && email) localStorage.setItem("lastAuthEmail", email);
     } catch {}
   };
 
   // ----- Helpers -----
   const verifyCaptchaServerSide = async (token: string) => {
+    // Optional: we keep this to fail fast before hitting Supabase.
     const res = await fetch("/api/verify-captcha", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -60,12 +59,33 @@ export default function LoginPage() {
     return res.json();
   };
 
+  const requireCaptcha = async () => {
+    if (!captchaToken) {
+      toast.error("Please complete the captcha");
+      return false;
+    }
+    const verify = await verifyCaptchaServerSide(captchaToken);
+    if (!verify?.success) {
+      toast.error("Captcha failed. Please try again.");
+      return false;
+    }
+    return true;
+  };
+
+  const resetCaptcha = () => {
+    try {
+      captchaRef.current?.resetCaptcha();
+    } catch {}
+    setCaptchaToken(null);
+  };
+
   // ----- Auth Actions -----
   const handleLogin = async () => {
     if (loading) return;
     setLoading(true);
 
     const { email, password } = loginForm;
+
     if (!email || !password) {
       toast.error("Please provide both email and password");
       setLoading(false);
@@ -76,21 +96,18 @@ export default function LoginPage() {
       setLoading(false);
       return;
     }
-    if (!captchaToken) {
-      toast.error("Please complete the captcha");
-      setLoading(false);
-      return;
-    }
 
     try {
-      const verify = await verifyCaptchaServerSide(captchaToken);
-      if (!verify.success) {
-        toast.error("Captcha failed");
-        setLoading(false);
-        return;
-      }
+      const ok = await requireCaptcha();
+      if (!ok) return;
 
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      // ✅ PASS CAPTCHA TOKEN TO SUPABASE
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+        options: { captchaToken: captchaToken as string },
+      });
+
       if (error || !data?.user) {
         toast.error(error?.message || "Login failed");
       } else {
@@ -98,12 +115,12 @@ export default function LoginPage() {
         toast.success("Logged in successfully");
         router.push("/dashboard");
       }
-    } catch {
+    } catch (e) {
+      console.error(e);
       toast.error("Unexpected error");
     } finally {
       setLoading(false);
-      captchaRef.current?.resetCaptcha();
-      setCaptchaToken(null);
+      resetCaptcha();
     }
   };
 
@@ -112,6 +129,7 @@ export default function LoginPage() {
     setLoading(true);
 
     const { email, password } = signUpForm;
+
     if (!email || !password) {
       toast.error("Please provide both email and password");
       setLoading(false);
@@ -122,34 +140,31 @@ export default function LoginPage() {
       setLoading(false);
       return;
     }
-    if (!captchaToken) {
-      toast.error("Please complete the captcha");
-      setLoading(false);
-      return;
-    }
 
     try {
-      const verify = await verifyCaptchaServerSide(captchaToken);
-      if (!verify.success) {
-        toast.error("Captcha failed");
-        setLoading(false);
-        return;
-      }
+      const ok = await requireCaptcha();
+      if (!ok) return;
 
-      const { data, error } = await supabase.auth.signUp({ email, password });
+      // ✅ PASS CAPTCHA TOKEN TO SUPABASE
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { captchaToken: captchaToken as string },
+      });
+
       if (error || !data?.user) {
         toast.error(error?.message || "Sign up failed");
       } else {
         maybeRememberEmail(email);
-        toast.success("Account created!");
+        toast.success("Account created! Check your email if confirmation is required.");
         router.push(isProSignup ? "/upgrade" : "/dashboard");
       }
-    } catch {
+    } catch (e) {
+      console.error(e);
       toast.error("Unexpected error");
     } finally {
       setLoading(false);
-      captchaRef.current?.resetCaptcha();
-      setCaptchaToken(null);
+      resetCaptcha();
     }
   };
 
@@ -163,31 +178,33 @@ export default function LoginPage() {
       setLoading(false);
       return;
     }
-    if (!captchaToken) {
-      toast.error("Please complete the captcha");
-      setLoading(false);
-      return;
-    }
 
     try {
-      const verify = await verifyCaptchaServerSide(captchaToken);
-      if (!verify.success) {
-        toast.error("Captcha failed");
-        setLoading(false);
-        return;
-      }
+      const ok = await requireCaptcha();
+      if (!ok) return;
 
-      const redirectTo = typeof window !== "undefined" ? `${window.location.origin}/update-password` : undefined;
-      const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
-      if (error) console.error(error);
-      toast.success("If an account exists, a reset link has been sent.");
-      setIsForgotMode(false);
-    } catch {
+      const redirectTo =
+        typeof window !== "undefined"
+          ? `${window.location.origin}/update-password`
+          : undefined;
+
+      // ✅ PASS CAPTCHA TOKEN TO SUPABASE (works in v2)
+      const resetOptions: any = { redirectTo, captchaToken: captchaToken as string };
+      const { error } = await supabase.auth.resetPasswordForEmail(email, resetOptions);
+
+      if (error) {
+        console.error(error);
+        toast.error(error.message || "Could not send reset email");
+      } else {
+        toast.success("If an account exists, a reset link has been sent.");
+        setIsForgotMode(false);
+      }
+    } catch (e) {
+      console.error(e);
       toast.error("Unexpected error");
     } finally {
       setLoading(false);
-      captchaRef.current?.resetCaptcha();
-      setCaptchaToken(null);
+      resetCaptcha();
     }
   };
 
@@ -256,8 +273,8 @@ export default function LoginPage() {
 
             <button
               type="submit"
-              disabled={loading}
-              className="w-full py-2 bg-violet-600 hover:bg-violet-500 rounded-md flex items-center justify-center gap-2"
+              disabled={loading || !captchaToken}
+              className="w-full py-2 bg-violet-600 hover:bg-violet-500 rounded-md flex items-center justify-center gap-2 disabled:opacity-60"
             >
               {loading && <Loader2 className="w-4 h-4 animate-spin" />}
               {loading ? "Logging in..." : "Log In"}
@@ -333,8 +350,8 @@ export default function LoginPage() {
 
             <button
               type="submit"
-              disabled={loading}
-              className="w-full py-2 bg-emerald-600 hover:bg-emerald-500 rounded-md flex items-center justify-center gap-2"
+              disabled={loading || !captchaToken}
+              className="w-full py-2 bg-emerald-600 hover:bg-emerald-500 rounded-md flex items-center justify-center gap-2 disabled:opacity-60"
             >
               {loading && <Loader2 className="w-4 h-4 animate-spin" />}
               {loading ? "Creating..." : "Sign Up"}
@@ -376,8 +393,8 @@ export default function LoginPage() {
 
             <button
               type="submit"
-              disabled={loading}
-              className="w-full py-2 bg-violet-600 hover:bg-violet-500 rounded-md flex items-center justify-center gap-2"
+              disabled={loading || !captchaToken}
+              className="w-full py-2 bg-violet-600 hover:bg-violet-500 rounded-md flex items-center justify-center gap-2 disabled:opacity-60"
             >
               {loading && <Loader2 className="w-4 h-4 animate-spin" />}
               {loading ? "Sending..." : "Send Reset Link"}
