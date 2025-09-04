@@ -1,12 +1,50 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import toast, { Toaster } from "react-hot-toast";
 
+const ADMIN_UUID = "777d0c66-4664-4b75-8d1c-0d91cd05b9b6"; // your UUID
+
 export default function NewBlogPost() {
   const router = useRouter();
+
+  // --- Auth state ---
+  const [authChecked, setAuthChecked] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const {
+        data: { user },
+        error,
+      } = await supabase.auth.getUser();
+
+      if (error) {
+        console.error("Auth error:", error.message);
+        router.push("/login");
+        return;
+      }
+
+      if (!user) {
+        console.warn("⚠️ No user logged in");
+        router.push("/login");
+        return;
+      }
+
+      if (user.id !== ADMIN_UUID) {
+        console.warn("⚠️ Unauthorized user tried to access blog editor");
+        router.push("/login");
+        return;
+      }
+
+      setIsAdmin(true);
+      setAuthChecked(true);
+    };
+
+    checkAuth();
+  }, [router]);
 
   // --- Form State ---
   const [form, setForm] = useState({
@@ -15,19 +53,20 @@ export default function NewBlogPost() {
     excerpt: "",
     content: "",
   });
-  const [loading, setLoading] = useState(false);
+  const [publishing, setPublishing] = useState(false);
 
   // --- Publish Handler ---
   const handlePublish = async (e: React.FormEvent) => {
-    e.preventDefault(); // stop full page reload
-    setLoading(true);
+    e.preventDefault();
+
+    if (publishing) return;
+    setPublishing(true);
 
     const { title, slug, excerpt, content } = form;
 
-    // Basic validation
     if (!title.trim() || !slug.trim() || !content.trim()) {
       toast.error("Please fill in all required fields");
-      setLoading(false);
+      setPublishing(false);
       return;
     }
 
@@ -54,9 +93,26 @@ export default function NewBlogPost() {
       console.error("❌ Unexpected error:", err);
       toast.error("Unexpected error while publishing");
     } finally {
-      setLoading(false);
+      setPublishing(false);
     }
   };
+
+  // --- UI ---
+  if (!authChecked) {
+    return (
+      <main className="max-w-2xl mx-auto p-6">
+        <p className="text-gray-300">Checking authentication...</p>
+      </main>
+    );
+  }
+
+  if (!isAdmin) {
+    return (
+      <main className="max-w-2xl mx-auto p-6">
+        <p className="text-red-400">Redirecting to login...</p>
+      </main>
+    );
+  }
 
   return (
     <main className="max-w-2xl mx-auto p-6">
@@ -104,10 +160,10 @@ export default function NewBlogPost() {
         {/* Publish Button */}
         <button
           type="submit"
-          disabled={loading}
+          disabled={publishing}
           className="bg-violet-600 px-4 py-2 rounded hover:bg-violet-500 disabled:opacity-50"
         >
-          {loading ? "Publishing..." : "Publish Post"}
+          {publishing ? "Publishing..." : "Publish Post"}
         </button>
       </form>
 
