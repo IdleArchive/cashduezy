@@ -12,11 +12,12 @@ export async function POST(req: Request) {
       );
     }
 
+    // ✅ Load secret at runtime (no top-level access)
     const secret = process.env.HCAPTCHA_SECRET;
     if (!secret) {
-      console.error("❌ Missing HCAPTCHA_SECRET in environment");
+      console.error("❌ Missing HCAPTCHA_SECRET in environment variables");
       return NextResponse.json(
-        { success: false, error: "Server misconfiguration: missing secret" },
+        { success: false, error: "Server misconfiguration: missing hCaptcha secret" },
         { status: 500 }
       );
     }
@@ -28,7 +29,7 @@ export async function POST(req: Request) {
       body: new URLSearchParams({
         secret,
         response: token,
-      }).toString(),
+      }),
     });
 
     if (!verifyResponse.ok) {

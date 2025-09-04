@@ -1,15 +1,35 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY! // needs service role for insert
-);
-
 export async function POST(req: Request) {
   try {
+    // ✅ Load Supabase env vars at runtime
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!supabaseUrl || !supabaseServiceRoleKey) {
+      console.error("❌ Missing Supabase env vars:", {
+        supabaseUrl: !!supabaseUrl,
+        supabaseServiceRoleKey: !!supabaseServiceRoleKey,
+      });
+      return NextResponse.json(
+        { success: false, error: "Server misconfigured: missing Supabase env vars" },
+        { status: 500 }
+      );
+    }
+
+    // ✅ Create client only after confirming envs
+    const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
+
     const body = await req.json();
     const { user, subscription } = body;
+
+    if (!user?.email || !user?.id || !subscription?.id) {
+      return NextResponse.json(
+        { success: false, error: "Missing required fields: user.email, user.id, subscription.id" },
+        { status: 400 }
+      );
+    }
 
     // === Call Mailgun API ===
     const mgResponse = await fetch(
@@ -31,6 +51,15 @@ export async function POST(req: Request) {
       }
     );
 
+    if (!mgResponse.ok) {
+      const text = await mgResponse.text();
+      console.error("Mailgun response error:", text);
+      return NextResponse.json(
+        { success: false, error: "Mailgun request failed" },
+        { status: 500 }
+      );
+    }
+
     const mgResult = await mgResponse.json();
 
     // === Save notification to Supabase ===
@@ -41,23 +70,25 @@ export async function POST(req: Request) {
         channel: "email",
         send_at: subscription.next_charge_date,
         status: "pending",
-        mailgun_id: mgResult.id, // ✅ store Mailgun job ID
+        mailgun_id: mgResult.id || null, // ✅ defensive
       },
     ]);
 
-    if (error) throw error;
+    if (error) {
+      console.error("Supabase insert error:", error);
+      throw error;
+    }
 
-    return NextResponse.json({ success: true, mailgunId: mgResult.id });
+    return NextResponse.json({ success: true, mailgunId: mgResult.id || null });
   } catch (err: unknown) {
     if (err instanceof Error) {
-      console.error("Mailgun error:", err.message);
+      console.error("send-subscription error:", err.message);
       return NextResponse.json(
         { success: false, error: err.message },
         { status: 500 }
       );
     }
-
-    console.error("Mailgun error (non-Error):", err);
+    console.error("send-subscription unknown error:", err);
     return NextResponse.json(
       { success: false, error: "Failed to send subscription reminder" },
       { status: 500 }
