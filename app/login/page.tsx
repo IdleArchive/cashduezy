@@ -1,11 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import toast, { Toaster } from "react-hot-toast";
-import HCaptcha from "@hcaptcha/react-hcaptcha";
 
 const MIN_PASSWORD_LEN = 6;
 
@@ -27,10 +26,6 @@ export default function LoginPage() {
 
   const [loading, setLoading] = useState(false);
 
-  // Captcha
-  const captchaRef = useRef<HCaptcha | null>(null);
-  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
-
   // Prefill returning user email
   useEffect(() => {
     try {
@@ -46,37 +41,6 @@ export default function LoginPage() {
     try {
       if (rememberEmail && email) localStorage.setItem("lastAuthEmail", email);
     } catch {}
-  };
-
-  // ----- Helpers -----
-  const verifyCaptchaServerSide = async (token: string) => {
-    // Optional: we keep this to fail fast before hitting Supabase.
-    const res = await fetch("/api/verify-captcha", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ token }),
-    });
-    return res.json();
-  };
-
-  const requireCaptcha = async () => {
-    if (!captchaToken) {
-      toast.error("Please complete the captcha");
-      return false;
-    }
-    const verify = await verifyCaptchaServerSide(captchaToken);
-    if (!verify?.success) {
-      toast.error("Captcha failed. Please try again.");
-      return false;
-    }
-    return true;
-  };
-
-  const resetCaptcha = () => {
-    try {
-      captchaRef.current?.resetCaptcha();
-    } catch {}
-    setCaptchaToken(null);
   };
 
   // ----- Auth Actions -----
@@ -98,14 +62,9 @@ export default function LoginPage() {
     }
 
     try {
-      const ok = await requireCaptcha();
-      if (!ok) return;
-
-      // ✅ PASS CAPTCHA TOKEN TO SUPABASE
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
-        options: { captchaToken: captchaToken as string },
       });
 
       if (error || !data?.user) {
@@ -120,7 +79,6 @@ export default function LoginPage() {
       toast.error("Unexpected error");
     } finally {
       setLoading(false);
-      resetCaptcha();
     }
   };
 
@@ -142,14 +100,9 @@ export default function LoginPage() {
     }
 
     try {
-      const ok = await requireCaptcha();
-      if (!ok) return;
-
-      // ✅ PASS CAPTCHA TOKEN TO SUPABASE
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
-        options: { captchaToken: captchaToken as string },
       });
 
       if (error || !data?.user) {
@@ -164,7 +117,6 @@ export default function LoginPage() {
       toast.error("Unexpected error");
     } finally {
       setLoading(false);
-      resetCaptcha();
     }
   };
 
@@ -180,17 +132,12 @@ export default function LoginPage() {
     }
 
     try {
-      const ok = await requireCaptcha();
-      if (!ok) return;
-
       const redirectTo =
         typeof window !== "undefined"
           ? `${window.location.origin}/update-password`
           : undefined;
 
-      // ✅ PASS CAPTCHA TOKEN TO SUPABASE (works in v2)
-      const resetOptions: any = { redirectTo, captchaToken: captchaToken as string };
-      const { error } = await supabase.auth.resetPasswordForEmail(email, resetOptions);
+      const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
 
       if (error) {
         console.error(error);
@@ -204,7 +151,6 @@ export default function LoginPage() {
       toast.error("Unexpected error");
     } finally {
       setLoading(false);
-      resetCaptcha();
     }
   };
 
@@ -265,15 +211,9 @@ export default function LoginPage() {
               </button>
             </div>
 
-            <HCaptcha
-              sitekey={process.env.NEXT_PUBLIC_HCAPTCHA_SITEKEY!}
-              onVerify={(token) => setCaptchaToken(token)}
-              ref={captchaRef}
-            />
-
             <button
               type="submit"
-              disabled={loading || !captchaToken}
+              disabled={loading}
               className="w-full py-2 bg-violet-600 hover:bg-violet-500 rounded-md flex items-center justify-center gap-2 disabled:opacity-60"
             >
               {loading && <Loader2 className="w-4 h-4 animate-spin" />}
@@ -342,15 +282,9 @@ export default function LoginPage() {
               Upgrade to Pro after sign up
             </label>
 
-            <HCaptcha
-              sitekey={process.env.NEXT_PUBLIC_HCAPTCHA_SITEKEY!}
-              onVerify={(token) => setCaptchaToken(token)}
-              ref={captchaRef}
-            />
-
             <button
               type="submit"
-              disabled={loading || !captchaToken}
+              disabled={loading}
               className="w-full py-2 bg-emerald-600 hover:bg-emerald-500 rounded-md flex items-center justify-center gap-2 disabled:opacity-60"
             >
               {loading && <Loader2 className="w-4 h-4 animate-spin" />}
@@ -385,15 +319,9 @@ export default function LoginPage() {
               required
             />
 
-            <HCaptcha
-              sitekey={process.env.NEXT_PUBLIC_HCAPTCHA_SITEKEY!}
-              onVerify={(token) => setCaptchaToken(token)}
-              ref={captchaRef}
-            />
-
             <button
               type="submit"
-              disabled={loading || !captchaToken}
+              disabled={loading}
               className="w-full py-2 bg-violet-600 hover:bg-violet-500 rounded-md flex items-center justify-center gap-2 disabled:opacity-60"
             >
               {loading && <Loader2 className="w-4 h-4 animate-spin" />}
@@ -407,18 +335,6 @@ export default function LoginPage() {
             </div>
           </form>
         )}
-
-        <p className="mt-6 text-[11px] text-gray-400 text-center">
-          This site is protected by hCaptcha and its{" "}
-          <a href="https://www.hcaptcha.com/privacy" target="_blank" className="underline">
-            Privacy Policy
-          </a>{" "}
-          and{" "}
-          <a href="https://www.hcaptcha.com/terms" target="_blank" className="underline">
-            Terms of Service
-          </a>{" "}
-          apply.
-        </p>
       </div>
 
       <Toaster position="top-right" />
