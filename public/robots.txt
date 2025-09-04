@@ -11,3 +11,6 @@ Host: https://cashduezy.com
 
 # Sitemap location
 Sitemap: https://cashduezy.com/sitemap.xml
+
+# Blog RSS feed
+Sitemap: https://cashduezy.com/blog/rss.xml

@@ -2,12 +2,37 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { Metadata } from "next";
-import { supabasePublic } from "@/lib/supabasePublic"; // ✅ public client
+import { supabasePublic } from "@/lib/supabasePublic";
 
 export const metadata: Metadata = {
-  title: "Blog | CashDuezy",
+  title: "CashDuezy Blog | Subscription & Budgeting Insights",
   description:
-    "Actionable guides on subscription tracking, cancellation, budgeting, and fintech. Written by the CashDuezy Dev Team.",
+    "Actionable guides on emergency funds, subscription tracking, cancellation strategies, and smarter money habits. Written by the CashDuezy Dev Team.",
+  alternates: {
+    canonical: "https://www.cashduezy.com/blog",
+  },
+  openGraph: {
+    type: "website",
+    url: "https://www.cashduezy.com/blog",
+    title: "CashDuezy Blog | Subscription & Budgeting Insights",
+    description:
+      "Explore expert tips on subscription management, budgeting, and financial wellness from the CashDuezy Dev Team.",
+    images: [
+      {
+        url: "https://www.cashduezy.com/og-default.png", // fallback OG image
+        width: 1200,
+        height: 630,
+        alt: "CashDuezy Blog",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "CashDuezy Blog | Subscription & Budgeting Insights",
+    description:
+      "Actionable guides on subscription tracking, cancellation, budgeting, and fintech. Written by the CashDuezy Dev Team.",
+    images: ["https://www.cashduezy.com/og-default.png"],
+  },
 };
 
 export const revalidate = 600; // refresh list every 10 minutes

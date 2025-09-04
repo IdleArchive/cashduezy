@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { supabasePublic } from "@/lib/supabasePublic"; // ✅ new public client
+import { supabasePublic } from "@/lib/supabasePublic"; // ✅ public client
 import React from "react";
 
 // Markdown + plugins
@@ -22,8 +22,8 @@ type Blog = {
   content: string;
   cover_image_url: string | null;
   author: string;
-  published_at: string; // ISO
-  updated_at: string;   // ISO
+  published_at: string;
+  updated_at: string;
   is_published: boolean;
 };
 
@@ -50,11 +50,7 @@ async function getPost(slug: string): Promise<Blog | null> {
       console.error("[BLOG] getPost error:", error.message);
       return null;
     }
-    if (!data) {
-      console.warn("[BLOG] getPost: no data returned for slug:", slug);
-      return null;
-    }
-    return data as Blog;
+    return data as Blog | null;
   } catch (e: any) {
     console.error("[BLOG] getPost unexpected error:", e?.message || e);
     return null;
@@ -89,17 +85,33 @@ export async function generateMetadata({
     return { title: "Article not found | CashDuezy" };
   }
 
-  const title = `${post.title} | CashDuezy`;
+  const title = `${post.title} | CashDuezy Blog`;
   const description =
     post.excerpt ??
-    "Research-backed article by the CashDuezy Dev Team. Subscription tracking, cancellation, and budgeting insights.";
-  const images = post.cover_image_url ? [{ url: post.cover_image_url }] : [];
+    post.content.slice(0, 160) ??
+    "Financial insights, subscription management tips, and budgeting strategies from the CashDuezy Dev Team.";
+  const canonicalUrl = `https://www.cashduezy.com/blog/${post.slug}`;
+  const images = post.cover_image_url
+    ? [{ url: post.cover_image_url }]
+    : [{ url: "https://www.cashduezy.com/og-default.png" }];
 
   return {
     title,
     description,
-    openGraph: { title, description, images },
-    twitter: { card: "summary_large_image", title, description, images },
+    alternates: { canonical: canonicalUrl },
+    openGraph: {
+      type: "article",
+      url: canonicalUrl,
+      title,
+      description,
+      images,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images,
+    },
   };
 }
 
@@ -111,7 +123,7 @@ export default async function BlogArticlePage({
   const post = await getPost(params.slug);
   if (!post) return notFound();
 
-  // JSON-LD for rich results
+  // JSON-LD schema for SEO
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "BlogPosting",
@@ -125,12 +137,12 @@ export default async function BlogArticlePage({
       name: "CashDuezy",
       logo: {
         "@type": "ImageObject",
-        url: "https://www.cashduezy.com/logo.png", // update to actual logo
+        url: "https://www.cashduezy.com/logo.png", // update to your real logo
       },
     },
     image: post.cover_image_url
       ? [post.cover_image_url]
-      : ["https://www.cashduezy.com/og-default.png"], // fallback
+      : ["https://www.cashduezy.com/og-default.png"],
     mainEntityOfPage: {
       "@type": "WebPage",
       "@id": `https://www.cashduezy.com/blog/${post.slug}`,
@@ -139,6 +151,7 @@ export default async function BlogArticlePage({
 
   return (
     <article className="mx-auto max-w-3xl px-4 py-10">
+      {/* SEO structured data */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}

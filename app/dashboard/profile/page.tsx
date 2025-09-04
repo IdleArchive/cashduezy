@@ -38,8 +38,7 @@ function ActionButton({
     "inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 disabled:opacity-60 disabled:cursor-not-allowed";
   const variants: Record<string, string> = {
     primary: "bg-blue-600 hover:bg-blue-700 text-white focus:ring-blue-500",
-    secondary:
-      "bg-gray-800 hover:bg-gray-700 text-gray-100 focus:ring-gray-600",
+    secondary: "bg-gray-800 hover:bg-gray-700 text-gray-100 focus:ring-gray-600",
     danger: "bg-red-600 hover:bg-red-700 text-white focus:ring-red-500",
     ghost: "text-gray-300 hover:text-gray-100 focus:ring-gray-700",
   };
@@ -311,11 +310,11 @@ export default function ProfilePage() {
             {email === "b.sasuta@gmail.com" && (
               <section className="border-t border-gray-800 pt-6">
                 <Link
-                  href="/dashboard/blog"
+                  href="/blog/new"
                   className="inline-flex items-center gap-2 rounded-lg bg-purple-600 px-4 py-2 text-sm font-semibold text-white hover:bg-purple-700"
                 >
                   <FileText className="h-4 w-4" />
-                  Blog Admin
+                  Write New Blog Post
                 </Link>
               </section>
             )}
