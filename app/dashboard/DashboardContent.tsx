@@ -45,7 +45,7 @@ import Link from "next/link";
 import UserAvatar from "@/components/UserAvatar";
 import jsPDF from "jspdf";
 // ✅ NEW: session guard hook
-const DEV_EMAIL = process.env.NEXT_PUBLIC_DEV_EMAIL;
+const DEV_EMAIL = (process.env.NEXT_PUBLIC_DEV_EMAIL || "").toLowerCase();
 export function useRequireSession() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -1346,6 +1346,16 @@ const handleExportPDF = () => {
     </span>
   </div>
 )}
+
+{/* Add blog button (only for you) */}
+{userEmail?.toLowerCase() === DEV_EMAIL && (
+  <Link
+    href="/blog/new"
+    className={`px-3 py-1.5 rounded-md text-sm flex items-center gap-1 ${accentButton("violet")}`}
+  >
+    <Edit className="w-4 h-4" /> Post Blog
+  </Link>
+)}
             {userEmail && (
               <button onClick={() => setIsModalOpen(true)} className={`px-3 py-1.5 rounded-md text-sm flex items-center gap-1 ${accentButton("violet")}`}>
                 <Plus className="w-4 h-4" /> Add
@@ -1382,13 +1392,22 @@ const handleExportPDF = () => {
       onClick={async () => {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
-        const { error } = await supabase
-          .from("user_flags")
-          .upsert({ user_id: user.id, is_pro: !isPro });
-        if (!error) {
-          setIsPro(!isPro);
-          toast.success(`Dev toggle: Pro ${!isPro ? "enabled" : "disabled"}`);
-        }
+        const { data, error } = await supabase
+  .from("user_flags")
+  .upsert(
+    { user_id: user.id, is_pro: !isPro },
+    { onConflict: "user_id" }        // 👈 needs unique index/constraint below
+  )
+  .select("is_pro")
+  .single();
+
+if (error) {
+  toast.error(error.message);
+  return;
+}
+setIsPro(Boolean(data?.is_pro));
+toast.success(`Dev toggle: Pro ${data?.is_pro ? "enabled" : "disabled"}`);
+
       }}
       className={`px-3 py-1 rounded-lg text-xs font-medium ${
         isPro

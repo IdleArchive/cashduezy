@@ -1,19 +1,23 @@
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 // /app/api/send-reminder/route.ts
 import { NextResponse } from "next/server";
 import nodemailer from "nodemailer";
 import { createClient } from "@supabase/supabase-js";
 
 export async function POST(req: Request) {
+  // Hide this endpoint outside local dev
+  if (process.env.NODE_ENV !== "development") {
+    return new Response("Not Found", { status: 404 });
+  }
+
   try {
     const { to, billName, dueDate, userId, subscriptionId } = await req.json();
 
-    // --- Validate inputs ---
     if (!to || !billName || !dueDate || !userId) {
-      return NextResponse.json(
-        { success: false, error: "Missing required fields (to, billName, dueDate, userId)" },
-        { status: 400 }
-      );
+      return NextResponse.json({ success:false, error:"Missing required fields", status:400 });
     }
+
 
     // --- Validate env vars ---
     if (

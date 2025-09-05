@@ -5,54 +5,62 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import toast, { Toaster } from "react-hot-toast";
 
+function normalizeSlug(raw: string) {
+  return raw
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9-]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
 export default function NewBlogPost() {
   const router = useRouter();
 
-  // --- Auth state ---
+  // --- Auth/Admin gate ---
   const [authChecked, setAuthChecked] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
 
-    const checkAuth = async () => {
-      // 1. Get user
-      const {
-        data: { user },
-        error,
-      } = await supabase.auth.getUser();
+    const checkAuth = async (retry = false) => {
+      const { data, error } = await supabase.auth.getUser();
 
       if (cancelled) return;
 
       if (error) {
-        console.error("Auth error:", error.message);
+        console.error("Auth error:", error);
         router.push("/login");
         return;
       }
 
+      const user = data.user;
       if (!user) {
-        // 👀 Instead of instantly redirecting, wait 500ms and retry once
-        setTimeout(checkAuth, 500);
+        if (!retry) setTimeout(() => checkAuth(true), 500);
         return;
       }
 
-      // 2. Check if user is in blog_admins
-      const { data: adminRow, error: adminError } = await supabase
-        .from("blog_admins")
-        .select("user_id")
-        .eq("user_id", user.id)
-        .maybeSingle();
+      // 1) DEV email override (optional)
+      const DEV_EMAIL = (process.env.NEXT_PUBLIC_DEV_EMAIL || "").toLowerCase();
+      let admin = !!(user.email && DEV_EMAIL && user.email.toLowerCase() === DEV_EMAIL);
 
-      if (cancelled) return;
+      // 2) Primary: membership in blog_admins (non-recursive policy must allow self read)
+      if (!admin) {
+        const { data: adminRow, error: adminErr } = await supabase
+          .from("blog_admins")
+          .select("user_id")
+          .eq("user_id", user.id)
+          .maybeSingle();
 
-      if (adminError) {
-        console.error("Error checking blog_admins:", adminError.message);
-        router.push("/login");
-        return;
+        if (adminErr) {
+          console.error("blog_admins check error:", adminErr);
+        }
+        admin = !!adminRow;
       }
 
-      if (!adminRow) {
-        console.warn("⚠️ Unauthorized user tried to access blog editor");
+      if (!admin) {
+        console.warn("Unauthorized user tried to access blog editor");
         router.push("/login");
         return;
       }
@@ -84,7 +92,7 @@ export default function NewBlogPost() {
     if (publishing) return;
     setPublishing(true);
 
-    const { title, slug, excerpt, cover_image_url, content } = form;
+    let { title, slug, excerpt, cover_image_url, content } = form;
 
     if (!title.trim() || !slug.trim() || !content.trim()) {
       toast.error("Please fill in all required fields");
@@ -92,45 +100,50 @@ export default function NewBlogPost() {
       return;
     }
 
+    const safeSlug = normalizeSlug(slug);
+
     try {
-      // --- Check for duplicate slug ---
-      const { data: existing, error: slugError } = await supabase
+      // --- Check for duplicate slug (head+count = lightweight) ---
+      const { count, error: slugError } = await supabase
         .from("blogs")
-        .select("id")
-        .eq("slug", slug.trim())
-        .maybeSingle();
+        .select("id", { count: "exact", head: true })
+        .eq("slug", safeSlug);
 
       if (slugError) {
-        console.error("Slug check error:", slugError.message);
+        console.error("Slug check error (full):", slugError);
+        toast.error(slugError.message || "Slug check failed");
+        setPublishing(false);
+        return;
       }
 
-      if (existing) {
+      if ((count ?? 0) > 0) {
         toast.error("Slug already exists. Please choose another.");
         setPublishing(false);
         return;
       }
 
       // --- Insert blog post ---
+      const now = new Date().toISOString();
       const { error } = await supabase.from("blogs").insert([
         {
           title: title.trim(),
-          slug: slug.trim(),
+          slug: safeSlug,
           excerpt: excerpt.trim() || null,
           cover_image_url: cover_image_url.trim() || null,
           content,
           author: "Dev Team",
           is_published: true,
-          published_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
+          published_at: now,
+          updated_at: now,
         },
       ]);
 
       if (error) {
-        console.error("❌ Insert error:", error);
+        console.error("❌ Insert error (full):", error);
         toast.error(error.message || "Failed to publish post");
       } else {
         toast.success("✅ Post published!");
-        router.push(`/blog/${slug}`);
+        router.push(`/blog/${safeSlug}`);
       }
     } catch (err) {
       console.error("❌ Unexpected error:", err);
@@ -145,6 +158,7 @@ export default function NewBlogPost() {
     return (
       <main className="max-w-2xl mx-auto p-6">
         <p className="text-gray-300">Checking authentication...</p>
+        <Toaster position="top-right" />
       </main>
     );
   }
@@ -153,6 +167,7 @@ export default function NewBlogPost() {
     return (
       <main className="max-w-2xl mx-auto p-6">
         <p className="text-red-400">Redirecting to login...</p>
+        <Toaster position="top-right" />
       </main>
     );
   }
@@ -178,6 +193,7 @@ export default function NewBlogPost() {
           placeholder="Slug (e.g. emergency-fund-savings-tips)"
           value={form.slug}
           onChange={(e) => setForm({ ...form, slug: e.target.value })}
+          onBlur={(e) => setForm((f) => ({ ...f, slug: normalizeSlug(e.target.value || f.slug) }))}
           className="w-full px-3 py-2 rounded border bg-gray-800 text-gray-100"
           required
         />
@@ -196,9 +212,7 @@ export default function NewBlogPost() {
           type="url"
           placeholder="Cover Image URL (optional)"
           value={form.cover_image_url}
-          onChange={(e) =>
-            setForm({ ...form, cover_image_url: e.target.value })
-          }
+          onChange={(e) => setForm({ ...form, cover_image_url: e.target.value })}
           className="w-full px-3 py-2 rounded border bg-gray-800 text-gray-100"
         />
 

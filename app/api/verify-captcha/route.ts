@@ -1,4 +1,5 @@
 import { NextResponse, NextRequest } from "next/server";
+export const dynamic = "force-dynamic";
 
 // Ensure Node.js runtime so we can reliably access env vars
 export const runtime = "nodejs";

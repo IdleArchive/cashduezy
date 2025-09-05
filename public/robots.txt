@@ -1,16 +1,13 @@
-# General rules
+# *
 User-agent: *
 Allow: /
 
-# Block private dashboard area
+# *
 User-agent: *
 Disallow: /dashboard
 
-# Host declaration
+# Host
 Host: https://cashduezy.com
 
-# Sitemap location
+# Sitemaps
 Sitemap: https://cashduezy.com/sitemap.xml
-
-# Blog RSS feed
-Sitemap: https://cashduezy.com/blog/rss.xml
