@@ -3,7 +3,9 @@ import Image from "next/image";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { supabasePublic } from "@/lib/supabasePublic";
+import AdminButtons from "./_components/AdminButtons";
 
+export const revalidate = 600;
 // --- SEO ---
 export const metadata: Metadata = {
   title: "CashDuezy Blog | Subscription & Budgeting Insights",
@@ -100,42 +102,48 @@ export default async function BlogIndexPage() {
         <ul className="grid gap-6 sm:grid-cols-2">
           {posts.map((post) => (
             <li
-              key={post.id}
-              className="group rounded-2xl border border-white/10 bg-white/5 p-4 shadow-sm transition hover:shadow-lg"
-            >
-              <Link href={`/blog/${post.slug}`} className="block" prefetch={false}>
-                {post.cover_image_url && (
-                  <div className="relative mb-4 aspect-[16/9] overflow-hidden rounded-xl">
-                    <Image
-                      src={post.cover_image_url}
-                      alt={post.title}
-                      fill
-                      className="object-cover transition-transform duration-300 group-hover:scale-105"
-                      sizes="(max-width: 768px) 100vw, 50vw"
-                      priority={false}
-                    />
-                  </div>
-                )}
+  key={post.id}
+  className="group rounded-2xl border border-white/10 bg-white/5 p-4 shadow-sm transition hover:shadow-lg"
+>
+  <Link href={`/blog/${post.slug}`} className="block" prefetch={false}>
+    {post.cover_image_url && (
+      <div className="relative mb-4 aspect-[16/9] overflow-hidden rounded-xl">
+        <Image
+          src={post.cover_image_url}
+          alt={post.title}
+          fill
+          className="object-cover transition-transform duration-300 group-hover:scale-105"
+          sizes="(max-width: 768px) 100vw, 50vw"
+          priority={false}
+        />
+      </div>
+    )}
 
-                <h2 className="text-xl font-semibold group-hover:text-primary">
-                  {post.title}
-                </h2>
+    <h2 className="text-xl font-semibold group-hover:text-primary">
+      {post.title}
+    </h2>
 
-                <div className="mt-1 text-sm text-muted-foreground">
-                  By {post.author || "Dev Team"} • {formatDate(post.published_at)}
-                </div>
+    <div className="mt-1 text-sm text-muted-foreground">
+      By {post.author || "Dev Team"} • {formatDate(post.published_at)}
+    </div>
 
-                {post.excerpt && (
-                  <p className="mt-3 line-clamp-3 text-sm text-foreground/80">
-                    {post.excerpt}
-                  </p>
-                )}
+    {post.excerpt && (
+      <p className="mt-3 line-clamp-3 text-sm text-foreground/80">
+        {post.excerpt}
+      </p>
+    )}
 
-                <span className="mt-4 inline-block text-sm font-medium text-primary">
-                  Read article →
-                </span>
-              </Link>
-            </li>
+    <span className="mt-4 inline-block text-sm font-medium text-primary">
+      Read article →
+    </span>
+  </Link>
+
+  {/* ▼ Admin-only controls (render nothing for non-admins) */}
+  <div className="mt-3">
+    <AdminButtons postId={post.id} slug={post.slug} />
+  </div>
+</li>
+
           ))}
         </ul>
       )}
