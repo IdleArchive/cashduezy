@@ -2,7 +2,7 @@
 import { notFound } from "next/navigation";
 import { getSupabaseServer } from "@/lib/supabaseServer";
 import { isAdmin } from "@/lib/isAdmin";
-import { updateBlogById } from "@/app/blog/actions";
+import { updateBlogAction } from "@/app/blog/actions"; // ✅ correct import
 
 export const dynamic = "force-dynamic";
 
@@ -22,37 +22,22 @@ export default async function EditBlogPage({ params }: { params: { slug: string 
     <div className="mx-auto max-w-3xl px-4 py-8">
       <h1 className="mb-6 text-2xl font-semibold">Edit Blog</h1>
 
-      {/* Simple form; only updates fields we know about */}
-      <form
-        action={async (formData: FormData) => {
-          "use server";
-          const payload = {
-            title: (formData.get("title") as string) || undefined,
-            slug: (formData.get("slug") as string) || undefined,
-            excerpt: (formData.get("excerpt") as string) ?? null,
-            cover_image_url: (formData.get("cover_image_url") as string) ?? null,
-            author: (formData.get("author") as string) || undefined,
-            published_at: (formData.get("published_at") as string) || null, // ISO
-          };
-          await updateBlogById(post.id, payload);
-        }}
-        className="space-y-5"
-      >
-        <Field label="Title" name="title" defaultValue={post.title} />
-        <Field label="Slug" name="slug" defaultValue={post.slug} />
+      {/* Server action signature must be (formData) => Promise<void> */}
+      <form action={updateBlogAction} className="space-y-5">
+        <input type="hidden" name="id" value={post.id} />
+
+        <Field label="Title" name="title" defaultValue={post.title ?? ""} />
+        <Field label="Slug" name="slug" defaultValue={post.slug ?? ""} />
         <Field label="Excerpt" name="excerpt" defaultValue={post.excerpt ?? ""} textarea />
         <Field label="Cover Image URL" name="cover_image_url" defaultValue={post.cover_image_url ?? ""} />
         <Field label="Author" name="author" defaultValue={post.author ?? ""} />
         <Field label="Published At (ISO)" name="published_at" defaultValue={post.published_at ?? ""} />
 
         <div className="flex gap-3">
-          <button
-            type="submit"
-            className="rounded-md bg-black px-4 py-2 text-white hover:opacity-90"
-          >
+          <button type="submit" className="rounded-md bg-black px-4 py-2 text-white hover:opacity-90">
             Save Changes
           </button>
-          <a href={`/blog/${post.slug}`} className="rounded-md border px-4 py-2 hover:bg-gray-50">
+          <a href={`/blog/${post.slug}`} className="rounded-md border px-4 py-2 hover:bg-gray-50 dark:hover:bg-white/10">
             Cancel
           </a>
         </div>
@@ -69,7 +54,7 @@ function Field({
 }: {
   label: string;
   name: string;
-  defaultValue?: string;
+  defaultValue?: string | null;
   textarea?: boolean;
 }) {
   return (
@@ -78,15 +63,15 @@ function Field({
       {textarea ? (
         <textarea
           name={name}
-          defaultValue={defaultValue}
-          className="w-full rounded-md border p-2"
+          defaultValue={defaultValue ?? ""}
+          className="w-full rounded-md border p-2 bg-transparent"
           rows={5}
         />
       ) : (
         <input
           name={name}
-          defaultValue={defaultValue}
-          className="w-full rounded-md border p-2"
+          defaultValue={defaultValue ?? ""}
+          className="w-full rounded-md border p-2 bg-transparent"
         />
       )}
     </label>
