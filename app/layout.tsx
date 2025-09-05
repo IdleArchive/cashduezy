@@ -4,7 +4,8 @@ import type { Metadata } from "next";
 import HeaderClient from "./HeaderClient";
 import FooterClient from "./FooterClient";
 import HideOnDashboard from "./HideOnDashboard";
-import Script from "next/script"; // ✅ added
+import Script from "next/script";
+import SupabaseSessionBridge from "./SupabaseSessionBridge"; // ✅ added
 
 // --- Base URL configuration ---
 const baseUrl =
@@ -61,7 +62,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        {/* ✅ Existing theme detection */}
+        {/* ✅ Theme detection before paint */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -85,25 +86,32 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           }}
         />
 
-        {/* ✅ Google Analytics with your tag */}
-        <Script
-          src="https://www.googletagmanager.com/gtag/js?id=G-TG0JWRHNTL"
-          strategy="afterInteractive"
-        />
-        <Script id="google-analytics" strategy="afterInteractive">
-          {`
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('js', new Date());
-            gtag('config', 'G-TG0JWRHNTL');
-          `}
-        </Script>
+        {/* ✅ Google Analytics (prod only) */}
+        {process.env.NODE_ENV === "production" && (
+          <>
+            <Script
+              src="https://www.googletagmanager.com/gtag/js?id=G-TG0JWRHNTL"
+              strategy="afterInteractive"
+            />
+            <Script id="google-analytics" strategy="afterInteractive">
+              {`
+                window.dataLayer = window.dataLayer || [];
+                function gtag(){dataLayer.push(arguments);}
+                gtag('js', new Date());
+                gtag('config', 'G-TG0JWRHNTL');
+              `}
+            </Script>
+          </>
+        )}
       </head>
       <body
         className="font-sans flex flex-col min-h-screen
                    bg-gray-50 text-gray-800
                    dark:bg-gray-950 dark:text-gray-100"
       >
+        {/* ✅ Sync browser session -> server cookies */}
+        <SupabaseSessionBridge />
+
         {/* --- Global Header (hidden on /dashboard) --- */}
         <HideOnDashboard>
           <HeaderClient />

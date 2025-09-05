@@ -1,9 +1,10 @@
-﻿"use client";
+﻿// /lib/supabaseClient.ts
+"use client";
 
 import { createBrowserClient } from "@supabase/ssr";
 
-// --- optional, for better TS in dev console
-type Supa = ReturnType<typeof createBrowserClient<any, any>>;
+// Narrow, reliable type for the singleton
+type Supa = ReturnType<typeof createBrowserClient<any>>;
 
 declare global {
   interface Window {
@@ -18,9 +19,8 @@ function initClient(): Supa {
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!url || !key) {
-    // Helpful error if envs are missing on localhost
     throw new Error(
-      "Missing NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY"
+      "Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY"
     );
   }
 
@@ -29,14 +29,13 @@ function initClient(): Supa {
       persistSession: true,
       autoRefreshToken: true,
       detectSessionInUrl: true,
-      storageKey: "supabase.auth",
+      // NOTE: no custom storageKey so DevTools/localStorage checks keep working
     },
   });
 
-  // Expose for debugging in DEVTOOLS (dev only)
+  // Expose in dev for quick console debugging
   if (process.env.NODE_ENV !== "production" && typeof window !== "undefined") {
     window.supabase = client;
-    // sanity log
     client.auth.getSession().then(({ data }) =>
       console.log("[supabase] session present:", !!data.session)
     );
@@ -45,8 +44,8 @@ function initClient(): Supa {
   return client;
 }
 
-// Singleton to survive HMR
-export function getSupabase() {
+/** Singleton instance (survives HMR) */
+export function getSupabase(): Supa {
   if (_client) return _client;
   _client = initClient();
   return _client;
