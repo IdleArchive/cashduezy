@@ -1,6 +1,7 @@
 // /app/sitemap.ts
 import { MetadataRoute } from "next";
 import { createClient } from "@supabase/supabase-js";
+export const revalidate = 3600; // rebuild sitemap hourly
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl =
@@ -9,25 +10,22 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       ? "https://www.cashduezy.com"
       : "http://localhost:3000");
 
-  // === Static core pages ===
-  const staticPages: MetadataRoute.Sitemap = [
-    { url: `${baseUrl}/`, lastModified: new Date(), changeFrequency: "daily", priority: 1.0 },
-    { url: `${baseUrl}/login`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.5 },
-    { url: `${baseUrl}/pricing`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.8 },
-    { url: `${baseUrl}/dashboard`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.6 },
-    { url: `${baseUrl}/privacy`, lastModified: new Date(), changeFrequency: "yearly", priority: 0.3 },
-    { url: `${baseUrl}/faq`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.6 },
-    { url: `${baseUrl}/goodbye`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.5 },
-    { url: `${baseUrl}/changelog`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.7 },
-    { url: `${baseUrl}/support`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.6 },
-    { url: `${baseUrl}/terms`, lastModified: new Date(), changeFrequency: "yearly", priority: 0.3 },
+  const now = new Date();
 
-    // ✅ Add blog index and RSS feed
-    { url: `${baseUrl}/blog`, lastModified: new Date(), changeFrequency: "daily", priority: 0.9 },
-    { url: `${baseUrl}/blog/rss.xml`, lastModified: new Date(), changeFrequency: "daily", priority: 0.7 },
+  const staticPages: MetadataRoute.Sitemap = [
+    { url: `${baseUrl}/`, lastModified: now, changeFrequency: "daily", priority: 1.0 },
+    { url: `${baseUrl}/login`, lastModified: now, changeFrequency: "monthly", priority: 0.5 },
+    { url: `${baseUrl}/pricing`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
+    { url: `${baseUrl}/privacy`, lastModified: now, changeFrequency: "yearly", priority: 0.3 },
+    { url: `${baseUrl}/faq`, lastModified: now, changeFrequency: "monthly", priority: 0.6 },
+    { url: `${baseUrl}/goodbye`, lastModified: now, changeFrequency: "monthly", priority: 0.5 },
+    { url: `${baseUrl}/changelog`, lastModified: now, changeFrequency: "weekly", priority: 0.7 },
+    { url: `${baseUrl}/support`, lastModified: now, changeFrequency: "monthly", priority: 0.6 },
+    { url: `${baseUrl}/terms`, lastModified: now, changeFrequency: "yearly", priority: 0.3 },
+    { url: `${baseUrl}/blog`, lastModified: now, changeFrequency: "daily", priority: 0.9 },
+    { url: `${baseUrl}/rss.xml`, lastModified: now, changeFrequency: "daily", priority: 0.7 },
   ];
 
-  // === Dynamic blog posts ===
   let blogPages: MetadataRoute.Sitemap = [];
   try {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -35,28 +33,27 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     if (supabaseUrl && supabaseAnonKey) {
       const supabase = createClient(supabaseUrl, supabaseAnonKey);
+      const nowIso = new Date().toISOString();
 
       const { data: posts, error } = await supabase
         .from("blogs")
-        .select("slug, updated_at")
+        .select("slug, updated_at, published_at")
         .eq("is_published", true)
-        .order("updated_at", { ascending: false });
+        .not("published_at", "is", null)
+        .lte("published_at", nowIso)
+        .order("published_at", { ascending: false });
 
-      if (error) {
-        console.error("[SITEMAP] Error fetching blog posts:", error.message);
-      } else if (posts?.length) {
-        blogPages = posts.map((post) => ({
-          url: `${baseUrl}/blog/${post.slug}`,
-          lastModified: post.updated_at ? new Date(post.updated_at) : new Date(),
+      if (!error && posts?.length) {
+        blogPages = posts.map((p: any) => ({
+          url: `${baseUrl}/blog/${p.slug}`,
+          lastModified: p.updated_at ? new Date(p.updated_at) : now,
           changeFrequency: "weekly",
           priority: 0.9,
         }));
       }
-    } else {
-      console.warn("[SITEMAP] Skipping blog fetch — missing Supabase env vars");
     }
   } catch (err) {
-    console.error("[SITEMAP] Unexpected error fetching blog posts:", err);
+    console.error("[SITEMAP] blog fetch error:", err);
   }
 
   return [...staticPages, ...blogPages];

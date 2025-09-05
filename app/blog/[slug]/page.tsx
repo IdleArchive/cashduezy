@@ -3,8 +3,8 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { supabasePublic } from "@/lib/supabasePublic"; // ✅ public client
 import React from "react";
+import { supabasePublic } from "@/lib/supabasePublic";
 
 // Markdown + plugins
 import ReactMarkdown from "react-markdown";
@@ -12,7 +12,8 @@ import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
 import rehypeSanitize from "rehype-sanitize";
 
-export const revalidate = 600; // ISR: refresh every 10 minutes
+// Always render fresh so edits/publishes show immediately in prod
+export const dynamic = "force-dynamic";
 
 type Blog = {
   id: number;
@@ -27,8 +28,11 @@ type Blog = {
   is_published: boolean;
 };
 
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString(undefined, {
+function formatDate(iso?: string | null) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleDateString(undefined, {
     year: "numeric",
     month: "long",
     day: "numeric",
@@ -37,6 +41,7 @@ function formatDate(iso: string) {
 
 async function getPost(slug: string): Promise<Blog | null> {
   try {
+    const nowIso = new Date().toISOString();
     const { data, error } = await supabasePublic
       .from("blogs")
       .select(
@@ -44,35 +49,38 @@ async function getPost(slug: string): Promise<Blog | null> {
       )
       .eq("slug", slug)
       .eq("is_published", true)
+      .not("published_at", "is", null)
+      .lte("published_at", nowIso)
       .maybeSingle();
 
     if (error) {
       console.error("[BLOG] getPost error:", error.message);
       return null;
     }
-    return data as Blog | null;
+    return (data as Blog) ?? null;
   } catch (e: any) {
     console.error("[BLOG] getPost unexpected error:", e?.message || e);
     return null;
   }
 }
 
-export async function generateStaticParams() {
-  try {
-    const { data, error } = await supabasePublic
-      .from("blogs")
-      .select("slug")
-      .eq("is_published", true);
+// We keep this light-weight fetch for metadata only
+async function getPostForMeta(slug: string) {
+  const nowIso = new Date().toISOString();
+  const { data, error } = await supabasePublic
+    .from("blogs")
+    .select("title, excerpt, cover_image_url, slug")
+    .eq("slug", slug)
+    .eq("is_published", true)
+    .not("published_at", "is", null)
+    .lte("published_at", nowIso)
+    .maybeSingle();
 
-    if (error) {
-      console.error("[BLOG] generateStaticParams error:", error.message);
-      return [];
-    }
-    return (data ?? []).map((row) => ({ slug: row.slug }));
-  } catch (err) {
-    console.error("[BLOG] generateStaticParams unexpected error:", err);
-    return [];
+  if (error) {
+    console.error("[BLOG] meta fetch error:", error.message);
+    return null;
   }
+  return data as { title: string; excerpt: string | null; cover_image_url: string | null; slug: string } | null;
 }
 
 export async function generateMetadata({
@@ -80,7 +88,7 @@ export async function generateMetadata({
 }: {
   params: { slug: string };
 }): Promise<Metadata> {
-  const post = await getPost(params.slug);
+  const post = await getPostForMeta(params.slug);
   if (!post) {
     return { title: "Article not found | CashDuezy" };
   }
@@ -88,12 +96,11 @@ export async function generateMetadata({
   const title = `${post.title} | CashDuezy Blog`;
   const description =
     post.excerpt ??
-    post.content.slice(0, 160) ??
     "Financial insights, subscription management tips, and budgeting strategies from the CashDuezy Dev Team.";
-  const canonicalUrl = `https://www.cashduezy.com/blog/${post.slug}`;
+  const canonicalUrl = `https://www.cashduezy.com/blog/${params.slug}`;
   const images = post.cover_image_url
-    ? [{ url: post.cover_image_url }]
-    : [{ url: "https://www.cashduezy.com/og-default.png" }];
+    ? [post.cover_image_url]
+    : ["https://www.cashduezy.com/og-default.png"];
 
   return {
     title,
@@ -106,7 +113,7 @@ export async function generateMetadata({
       description,
       images,
     },
-    twitter: {
+  twitter: {
       card: "summary_large_image",
       title,
       description,
@@ -128,16 +135,16 @@ export default async function BlogArticlePage({
     "@context": "https://schema.org",
     "@type": "BlogPosting",
     headline: post.title,
-    description: post.excerpt || post.content.slice(0, 160),
+    description: post.excerpt || (post.content ?? "").slice(0, 160),
     datePublished: post.published_at,
-    dateModified: post.updated_at,
+    dateModified: post.updated_at || post.published_at,
     author: { "@type": "Organization", name: "CashDuezy Dev Team" },
     publisher: {
       "@type": "Organization",
       name: "CashDuezy",
       logo: {
         "@type": "ImageObject",
-        url: "https://www.cashduezy.com/logo.png", // update to your real logo
+        url: "https://www.cashduezy.com/logo.png",
       },
     },
     image: post.cover_image_url
@@ -160,6 +167,7 @@ export default async function BlogArticlePage({
       <div className="mb-6">
         <Link
           href="/blog"
+          prefetch={false}
           className="text-sm text-primary underline-offset-2 hover:underline"
         >
           ← Back to Blog
@@ -169,11 +177,11 @@ export default async function BlogArticlePage({
       <header className="mb-6">
         <h1 className="text-3xl font-bold tracking-tight">{post.title}</h1>
         <div className="mt-2 text-sm text-muted-foreground">
-          By {post.author} • {formatDate(post.published_at)}
+          By {post.author || "Dev Team"} • {formatDate(post.published_at)}
         </div>
       </header>
 
-      {post.cover_image_url ? (
+      {post.cover_image_url && (
         <div className="relative mb-8 aspect-[16/9] overflow-hidden rounded-xl">
           <Image
             src={post.cover_image_url}
@@ -184,9 +192,9 @@ export default async function BlogArticlePage({
             priority
           />
         </div>
-      ) : null}
+      )}
 
-      <div className="prose max-w-none prose-headings:scroll-mt-20">
+      <div className="prose prose-invert max-w-none prose-headings:scroll-mt-20">
         <ReactMarkdown
           remarkPlugins={[remarkGfm]}
           rehypePlugins={[rehypeRaw, rehypeSanitize]}

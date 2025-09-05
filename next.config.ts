@@ -1,41 +1,59 @@
+// next.config.ts
 import type { NextConfig } from "next";
 
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+let supabaseHost: string | undefined;
+try {
+  supabaseHost = supabaseUrl ? new URL(supabaseUrl).hostname : undefined;
+} catch {
+  supabaseHost = undefined;
+}
+
 const nextConfig: NextConfig = {
-  // Skip ESLint during `next build` on Vercel to avoid Edge runtime issues
-  eslint: {
-    ignoreDuringBuilds: true,
+  eslint: { ignoreDuringBuilds: true },
+  reactStrictMode: true,
+  poweredByHeader: false,
+
+  images: {
+    remotePatterns: [
+      ...(supabaseHost
+        ? [
+            {
+              protocol: "https",
+              hostname: supabaseHost,
+              pathname: "/storage/v1/object/public/**",
+            } as const,
+          ]
+        : []),
+      { protocol: "https", hostname: "www.cashduezy.com", pathname: "/**" },
+      { protocol: "https", hostname: "cashduezy.com", pathname: "/**" },
+    ],
   },
 
-  // Good default; keeps React warnings helpful in dev
-  reactStrictMode: true,
-
-  // ✅ Redirects
   async redirects() {
     return [
-      {
-        source: "/dashboard/blog",
-        destination: "/blog/new",
-        permanent: true, // 308 redirect, SEO-friendly
-      },
-      {
-        source: "/dashboard/profile",
-        destination: "/dashboard/account",
-        permanent: true, // 308 redirect, safe rename for account page
-      },
+      { source: "/dashboard/blog", destination: "/blog/new", permanent: true },
+      { source: "/dashboard/profile", destination: "/dashboard/account", permanent: true },
     ];
   },
 
-  // ✅ Force correct Content-Type for sitemap.xml
   async headers() {
     return [
       {
         source: "/sitemap.xml",
-        headers: [
-          {
-            key: "Content-Type",
-            value: "application/xml",
-          },
-        ],
+        headers: [{ key: "Content-Type", value: "application/xml" }],
+      },
+      {
+        source: "/sitemap-:index.xml",
+        headers: [{ key: "Content-Type", value: "application/xml" }],
+      },
+      {
+        source: "/rss.xml",
+        headers: [{ key: "Content-Type", value: "application/rss+xml; charset=utf-8" }],
+      },
+      {
+        source: "/robots.txt",
+        headers: [{ key: "Content-Type", value: "text/plain; charset=utf-8" }],
       },
     ];
   },
