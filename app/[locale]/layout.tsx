@@ -26,10 +26,9 @@ const locales = Object.keys(langMap);
 
 type LayoutProps = {
   children: ReactNode;
-  params: { locale: string };
 };
 
-// ✅ Layout wrapper
+// ✅ Layout wrapper (no params here!)
 export default function LocaleLayout({ children }: LayoutProps) {
   return <>{children}</>;
 }
@@ -39,7 +38,7 @@ export async function generateStaticParams() {
   return locales.map((locale) => ({ locale }));
 }
 
-// ✅ Metadata per locale (translated)
+// ✅ Metadata per locale (params *is* allowed here)
 export async function generateMetadata({
   params,
 }: {
