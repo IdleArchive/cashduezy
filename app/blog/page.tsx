@@ -6,11 +6,19 @@ import { supabasePublic } from "@/lib/supabasePublic";
 import AdminButtons from "./_components/AdminButtons";
 
 export const revalidate = 600;
+
 // --- SEO ---
 export const metadata: Metadata = {
   title: "CashDuezy Blog | Subscription & Budgeting Insights",
   description:
     "Actionable guides on emergency funds, subscription tracking, cancellation strategies, and smarter money habits. Written by the CashDuezy Dev Team.",
+  keywords: [
+    "subscription management",
+    "emergency fund",
+    "budgeting tips",
+    "financial planning",
+    "CashDuezy blog",
+  ],
   alternates: { canonical: "https://www.cashduezy.com/blog" },
   openGraph: {
     type: "website",
@@ -47,6 +55,7 @@ type BlogListItem = {
   cover_image_url: string | null;
   author: string;
   published_at: string; // ISO
+  content?: string; // optional fallback
 };
 
 function formatDate(iso: string) {
@@ -66,7 +75,7 @@ async function getPosts(): Promise<BlogListItem[]> {
     const { data, error } = await supabasePublic
       .from("blogs")
       .select(
-        "id, title, slug, excerpt, cover_image_url, author, published_at"
+        "id, title, slug, excerpt, cover_image_url, author, published_at, content"
       )
       .eq("is_published", true)
       .not("published_at", "is", null) // exclude drafts missing a publish date
@@ -92,7 +101,7 @@ export default async function BlogIndexPage() {
       <header className="mb-8">
         <h1 className="text-3xl font-bold tracking-tight">CashDuezy Blog</h1>
         <p className="mt-2 text-muted-foreground">
-          Research-backed articles by the Dev Team. No fluff—just useful.
+          Research-backed articles by the Dev Team. No fluff — just useful.
         </p>
       </header>
 
@@ -100,51 +109,56 @@ export default async function BlogIndexPage() {
         <p className="text-muted-foreground">No published posts yet.</p>
       ) : (
         <ul className="grid gap-6 sm:grid-cols-2">
-          {posts.map((post) => (
-            <li
-  key={post.id}
-  className="group rounded-2xl border border-white/10 bg-white/5 p-4 shadow-sm transition hover:shadow-lg"
->
-  <Link href={`/blog/${post.slug}`} className="block" prefetch={false}>
-    {post.cover_image_url && (
-      <div className="relative mb-4 aspect-[16/9] overflow-hidden rounded-xl">
-        <Image
-          src={post.cover_image_url}
-          alt={post.title}
-          fill
-          className="object-cover transition-transform duration-300 group-hover:scale-105"
-          sizes="(max-width: 768px) 100vw, 50vw"
-          priority={false}
-        />
-      </div>
-    )}
+          {posts.map((post) => {
+            // Ensure we always have a preview description
+            const excerpt =
+              post.excerpt ||
+              (post.content ?? "").slice(0, 160).replace(/\s+\S*$/, "");
 
-    <h2 className="text-xl font-semibold group-hover:text-primary">
-      {post.title}
-    </h2>
+            return (
+              <li
+                key={post.id}
+                className="group rounded-2xl border border-white/10 bg-white/5 p-4 shadow-sm transition hover:shadow-lg"
+              >
+                <Link href={`/blog/${post.slug}`} className="block" prefetch={false}>
+                  {post.cover_image_url && (
+                    <div className="relative mb-4 aspect-[16/9] overflow-hidden rounded-xl">
+                      <Image
+                        src={post.cover_image_url}
+                        alt={`Cover image for ${post.title} - CashDuezy blog`}
+                        fill
+                        className="object-cover transition-transform duration-300 group-hover:scale-105"
+                        sizes="(max-width: 768px) 100vw, 50vw"
+                      />
+                    </div>
+                  )}
 
-    <div className="mt-1 text-sm text-muted-foreground">
-      By {post.author || "Dev Team"} • {formatDate(post.published_at)}
-    </div>
+                  <h2 className="text-xl font-semibold group-hover:text-primary">
+                    {post.title}
+                  </h2>
 
-    {post.excerpt && (
-      <p className="mt-3 line-clamp-3 text-sm text-foreground/80">
-        {post.excerpt}
-      </p>
-    )}
+                  <div className="mt-1 text-sm text-muted-foreground">
+                    By {post.author || "Dev Team"} • {formatDate(post.published_at)}
+                  </div>
 
-    <span className="mt-4 inline-block text-sm font-medium text-primary">
-      Read article →
-    </span>
-  </Link>
+                  {excerpt && (
+                    <p className="mt-3 line-clamp-3 text-sm text-foreground/80">
+                      {excerpt}
+                    </p>
+                  )}
 
-  {/* ▼ Admin-only controls (render nothing for non-admins) */}
-  <div className="mt-3">
-    <AdminButtons postId={post.id} slug={post.slug} />
-  </div>
-</li>
+                  <span className="mt-4 inline-block text-sm font-medium text-primary">
+                    Read article →
+                  </span>
+                </Link>
 
-          ))}
+                {/* ▼ Admin-only controls (render nothing for non-admins) */}
+                <div className="mt-3">
+                  <AdminButtons postId={post.id} slug={post.slug} />
+                </div>
+              </li>
+            );
+          })}
         </ul>
       )}
     </main>

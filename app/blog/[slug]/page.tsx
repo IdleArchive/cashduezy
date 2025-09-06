@@ -64,7 +64,7 @@ async function getPost(slug: string): Promise<Blog | null> {
   }
 }
 
-// We keep this light-weight fetch for metadata only
+// Lightweight fetch for metadata only
 async function getPostForMeta(slug: string) {
   const nowIso = new Date().toISOString();
   const { data, error } = await supabasePublic
@@ -80,7 +80,12 @@ async function getPostForMeta(slug: string) {
     console.error("[BLOG] meta fetch error:", error.message);
     return null;
   }
-  return data as { title: string; excerpt: string | null; cover_image_url: string | null; slug: string } | null;
+  return data as {
+    title: string;
+    excerpt: string | null;
+    cover_image_url: string | null;
+    slug: string;
+  } | null;
 }
 
 export async function generateMetadata({
@@ -95,7 +100,7 @@ export async function generateMetadata({
 
   const title = `${post.title} | CashDuezy Blog`;
   const description =
-    post.excerpt ??
+    post.excerpt ||
     "Financial insights, subscription management tips, and budgeting strategies from the CashDuezy Dev Team.";
   const canonicalUrl = `https://www.cashduezy.com/blog/${params.slug}`;
   const images = post.cover_image_url
@@ -105,6 +110,14 @@ export async function generateMetadata({
   return {
     title,
     description,
+    keywords: [
+      "emergency fund",
+      "savings tips",
+      "budgeting",
+      "subscription tracking",
+      "personal finance",
+      "CashDuezy",
+    ],
     alternates: { canonical: canonicalUrl },
     openGraph: {
       type: "article",
@@ -113,7 +126,7 @@ export async function generateMetadata({
       description,
       images,
     },
-  twitter: {
+    twitter: {
       card: "summary_large_image",
       title,
       description,
@@ -130,12 +143,16 @@ export default async function BlogArticlePage({
   const post = await getPost(params.slug);
   if (!post) return notFound();
 
+  const metaDescription =
+    post.excerpt ||
+    (post.content ?? "").slice(0, 160).replace(/\s+\S*$/, ""); // clean cutoff
+
   // JSON-LD schema for SEO
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "BlogPosting",
     headline: post.title,
-    description: post.excerpt || (post.content ?? "").slice(0, 160),
+    description: metaDescription,
     datePublished: post.published_at,
     dateModified: post.updated_at || post.published_at,
     author: { "@type": "Organization", name: "CashDuezy Dev Team" },
@@ -185,7 +202,7 @@ export default async function BlogArticlePage({
         <div className="relative mb-8 aspect-[16/9] overflow-hidden rounded-xl">
           <Image
             src={post.cover_image_url}
-            alt={post.title}
+            alt={`Cover image for ${post.title} - CashDuezy blog post`}
             fill
             className="object-cover"
             sizes="(max-width: 768px) 100vw, 768px"
