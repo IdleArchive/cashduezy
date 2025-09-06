@@ -1,13 +1,13 @@
-# *
+# Global user agent rules
 User-agent: *
 Allow: /
 
-# *
+# Block dashboard from being crawled
 User-agent: *
 Disallow: /dashboard
 
-# Host
+# Host directive (main site)
 Host: https://cashduezy.com
 
-# Sitemaps
+# Sitemap reference 
 Sitemap: https://cashduezy.com/sitemap.xml

@@ -1,3 +1,4 @@
+// app/sitemap.ts
 import { MetadataRoute } from "next";
 import { createClient } from "@supabase/supabase-js";
 
@@ -29,7 +30,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     "pt-BR",
   ];
 
-  // --- Static core pages ---
+  // --- Core static pages ---
   const corePaths = [
     { path: "/", changeFrequency: "daily", priority: 1.0 },
     { path: "/login", changeFrequency: "monthly", priority: 0.5 },
@@ -49,6 +50,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   corePaths.forEach((page) => {
     locales.forEach((locale) => {
       const isDefault = locale === "en-US";
+
+      // root path `/` → `/` (default) or `/fr-FR`
+      // everything else → `/faq` (default) or `/fr-FR/faq`
       const localizedPath =
         page.path === "/"
           ? isDefault
@@ -65,18 +69,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         priority: page.priority,
       });
     });
-  });
-
-  // --- RSS feeds (one per locale) ---
-  const rssFeeds: MetadataRoute.Sitemap = locales.map((locale) => {
-    const isDefault = locale === "en-US";
-    const rssPath = isDefault ? `/rss.xml` : `/rss.xml?locale=${locale}`;
-    return {
-      url: `${baseUrl}${rssPath}`,
-      lastModified: now,
-      changeFrequency: "daily",
-      priority: 0.7,
-    };
   });
 
   // --- Blog posts from Supabase ---
@@ -139,5 +131,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     console.error("[SITEMAP] blog fetch error:", err);
   }
 
-  return [...staticPages, ...rssFeeds, ...blogPages];
+  return [...staticPages, ...blogPages];
 }
