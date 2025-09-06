@@ -153,12 +153,25 @@ export default async function BlogArticlePage({
     "@type": "BlogPosting",
     headline: post.title,
     description: metaDescription,
+    articleSection: "Finance", // Optional, helps categorization
+    keywords: [
+      "emergency fund",
+      "savings",
+      "budgeting",
+      "subscription management",
+      "CashDuezy",
+    ],
     datePublished: post.published_at,
     dateModified: post.updated_at || post.published_at,
-    author: { "@type": "Organization", name: "CashDuezy Dev Team" },
+    author: {
+      "@type": "Organization",
+      name: "CashDuezy Dev Team",
+      url: "https://www.cashduezy.com/about", // ✅ Added
+    },
     publisher: {
       "@type": "Organization",
       name: "CashDuezy",
+      url: "https://www.cashduezy.com", // ✅ Added
       logo: {
         "@type": "ImageObject",
         url: "https://www.cashduezy.com/logo.png",

@@ -96,8 +96,50 @@ async function getPosts(): Promise<BlogListItem[]> {
 export default async function BlogIndexPage() {
   const posts = await getPosts();
 
+  // JSON-LD structured data for Blog + list of posts
+  const blogJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Blog",
+    name: "CashDuezy Blog",
+    url: "https://www.cashduezy.com/blog",
+    description:
+      "CashDuezy Blog shares expert insights on subscription management, budgeting, emergency funds, and smarter money habits.",
+    publisher: {
+      "@type": "Organization",
+      name: "CashDuezy",
+      url: "https://www.cashduezy.com",
+      logo: {
+        "@type": "ImageObject",
+        url: "https://www.cashduezy.com/logo.png",
+      },
+    },
+    blogPost: posts.map((post) => ({
+      "@type": "BlogPosting",
+      headline: post.title,
+      url: `https://www.cashduezy.com/blog/${post.slug}`,
+      datePublished: post.published_at,
+      author: {
+        "@type": "Organization",
+        name: post.author || "CashDuezy Dev Team",
+        url: "https://www.cashduezy.com/about",
+      },
+      image: post.cover_image_url
+        ? [post.cover_image_url]
+        : ["https://www.cashduezy.com/og-default.png"],
+      description:
+        post.excerpt ||
+        (post.content ?? "").slice(0, 160).replace(/\s+\S*$/, ""),
+    })),
+  };
+
   return (
     <main className="mx-auto max-w-5xl px-4 py-10">
+      {/* SEO structured data */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(blogJsonLd) }}
+      />
+
       <header className="mb-8">
         <h1 className="text-3xl font-bold tracking-tight">CashDuezy Blog</h1>
         <p className="mt-2 text-muted-foreground">
@@ -110,7 +152,6 @@ export default async function BlogIndexPage() {
       ) : (
         <ul className="grid gap-6 sm:grid-cols-2">
           {posts.map((post) => {
-            // Ensure we always have a preview description
             const excerpt =
               post.excerpt ||
               (post.content ?? "").slice(0, 160).replace(/\s+\S*$/, "");
@@ -120,7 +161,11 @@ export default async function BlogIndexPage() {
                 key={post.id}
                 className="group rounded-2xl border border-white/10 bg-white/5 p-4 shadow-sm transition hover:shadow-lg"
               >
-                <Link href={`/blog/${post.slug}`} className="block" prefetch={false}>
+                <Link
+                  href={`/blog/${post.slug}`}
+                  className="block"
+                  prefetch={false}
+                >
                   {post.cover_image_url && (
                     <div className="relative mb-4 aspect-[16/9] overflow-hidden rounded-xl">
                       <Image
