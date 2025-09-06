@@ -1,8 +1,7 @@
-// /app/sitemap.ts
 import { MetadataRoute } from "next";
 import { createClient } from "@supabase/supabase-js";
 
-export const revalidate = 3600; // Rebuild sitemap hourly
+export const revalidate = 3600; // rebuild sitemap hourly
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl =
@@ -13,22 +12,74 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const now = new Date();
 
-  // --- Static pages ---
-  const staticPages: MetadataRoute.Sitemap = [
-    { url: `${baseUrl}/`, lastModified: now, changeFrequency: "daily", priority: 1.0 },
-    { url: `${baseUrl}/login`, lastModified: now, changeFrequency: "monthly", priority: 0.5 },
-    { url: `${baseUrl}/pricing`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
-    { url: `${baseUrl}/privacy`, lastModified: now, changeFrequency: "yearly", priority: 0.3 },
-    { url: `${baseUrl}/faq`, lastModified: now, changeFrequency: "monthly", priority: 0.6 },
-    { url: `${baseUrl}/goodbye`, lastModified: now, changeFrequency: "monthly", priority: 0.5 },
-    { url: `${baseUrl}/changelog`, lastModified: now, changeFrequency: "weekly", priority: 0.7 },
-    { url: `${baseUrl}/support`, lastModified: now, changeFrequency: "monthly", priority: 0.6 },
-    { url: `${baseUrl}/terms`, lastModified: now, changeFrequency: "yearly", priority: 0.3 },
-    { url: `${baseUrl}/blog`, lastModified: now, changeFrequency: "daily", priority: 0.9 },
-    { url: `${baseUrl}/rss.xml`, lastModified: now, changeFrequency: "daily", priority: 0.7 },
+  // --- Locales from next.config.ts ---
+  const locales = [
+    "en-US", // default
+    "en-GB",
+    "en-IN",
+    "en-CA",
+    "en-AU",
+    "fr-FR",
+    "de-DE",
+    "es-ES",
+    "it-IT",
+    "ja-JP",
+    "zh-CN",
+    "ko-KR",
+    "pt-BR",
   ];
 
-  // --- Blog posts ---
+  // --- Static core pages ---
+  const corePaths = [
+    { path: "/", changeFrequency: "daily", priority: 1.0 },
+    { path: "/login", changeFrequency: "monthly", priority: 0.5 },
+    { path: "/pricing", changeFrequency: "weekly", priority: 0.8 },
+    { path: "/privacy", changeFrequency: "yearly", priority: 0.3 },
+    { path: "/faq", changeFrequency: "monthly", priority: 0.6 },
+    { path: "/goodbye", changeFrequency: "monthly", priority: 0.5 },
+    { path: "/changelog", changeFrequency: "weekly", priority: 0.7 },
+    { path: "/support", changeFrequency: "monthly", priority: 0.6 },
+    { path: "/terms", changeFrequency: "yearly", priority: 0.3 },
+    { path: "/blog", changeFrequency: "daily", priority: 0.9 },
+  ];
+
+  const staticPages: MetadataRoute.Sitemap = [];
+
+  // Generate localized versions of static pages
+  corePaths.forEach((page) => {
+    locales.forEach((locale) => {
+      const isDefault = locale === "en-US";
+      const localizedPath =
+        page.path === "/"
+          ? isDefault
+            ? "/"
+            : `/${locale}`
+          : isDefault
+          ? page.path
+          : `/${locale}${page.path}`;
+
+      staticPages.push({
+        url: `${baseUrl}${localizedPath}`,
+        lastModified: now,
+        changeFrequency: page.changeFrequency as any,
+        priority: page.priority,
+      });
+    });
+  });
+
+  // --- RSS feeds (one per locale) ---
+  const rssFeeds: MetadataRoute.Sitemap = locales.map((locale) => {
+    const isDefault = locale === "en-US";
+    const rssPath = isDefault ? `/rss.xml` : `/rss.xml?locale=${locale}`;
+    return {
+      url: `${baseUrl}${rssPath}`,
+      lastModified: now,
+      changeFrequency: "daily",
+      priority: 0.7,
+    };
+  });
+
+  // --- Blog posts from Supabase ---
   let blogPages: MetadataRoute.Sitemap = [];
   try {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -43,38 +94,44 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         .select("slug, updated_at, published_at")
         .eq("is_published", true)
         .not("published_at", "is", null)
-        .lte("published_at", nowIso) // ✅ only include posts already published
+        .lte("published_at", nowIso)
         .order("published_at", { ascending: false });
 
       if (!error && posts?.length) {
         blogPages = posts
-          // ✅ filter out any future-dated posts just in case
           .filter((p: any) => new Date(p.published_at) <= new Date())
-          .map((p: any) => {
+          .flatMap((p: any) => {
             const lastMod = p.updated_at || p.published_at || nowIso;
-
-            // Dynamically set crawl frequency based on age
             const publishedDate = new Date(p.published_at);
             const ageInDays =
               (Date.now() - publishedDate.getTime()) / (1000 * 60 * 60 * 24);
 
-            let changeFrequency: "daily" | "weekly" | "monthly" | "yearly" = "weekly";
-            if (ageInDays <= 7) changeFrequency = "daily"; // fresh posts
-            else if (ageInDays <= 30) changeFrequency = "weekly"; // recent posts
-            else if (ageInDays <= 365) changeFrequency = "monthly"; // older posts
-            else changeFrequency = "yearly"; // archive
+            let changeFrequency: "daily" | "weekly" | "monthly" | "yearly" =
+              "weekly";
+            if (ageInDays <= 7) changeFrequency = "daily";
+            else if (ageInDays <= 30) changeFrequency = "weekly";
+            else if (ageInDays <= 365) changeFrequency = "monthly";
+            else changeFrequency = "yearly";
 
-            return {
-              url: `${baseUrl}/blog/${p.slug}`,
-              lastModified: new Date(lastMod),
-              changeFrequency,
-              priority: 0.9,
-            };
+            return locales.map((locale) => {
+              const isDefault = locale === "en-US";
+              const localizedPath = isDefault
+                ? `/blog/${p.slug}`
+                : `/${locale}/blog/${p.slug}`;
+
+              return {
+                url: `${baseUrl}${localizedPath}`,
+                lastModified: new Date(lastMod),
+                changeFrequency,
+                priority: 0.9,
+              };
+            });
           });
 
-        // ✅ Debug logging only in non-production environments
         if (process.env.NODE_ENV !== "production") {
-          console.log(`[SITEMAP] Added ${blogPages.length} blog posts to sitemap`);
+          console.log(
+            `[SITEMAP] Added ${blogPages.length} localized blog entries`
+          );
         }
       }
     }
@@ -82,5 +139,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     console.error("[SITEMAP] blog fetch error:", err);
   }
 
-  return [...staticPages, ...blogPages];
+  return [...staticPages, ...rssFeeds, ...blogPages];
 }

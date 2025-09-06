@@ -1,4 +1,3 @@
-// app/HeaderClient.tsx
 "use client";
 
 import Link from "next/link";
@@ -16,21 +15,29 @@ interface NavItem {
 }
 
 interface HeaderClientProps {
-  onLoginClick?: () => void; // 🔑 new prop
+  onLoginClick?: () => void;
 }
 
 export default function HeaderClient({ onLoginClick }: HeaderClientProps) {
   const pathname = usePathname();
+  const [mounted, setMounted] = useState(false); // ✅ prevent hydration mismatches
   const [theme, setTheme] = useState<ThemeChoice>("system");
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
+  // detect mount
+  useEffect(() => setMounted(true), []);
+
   // theme init
   useEffect(() => {
     try {
-      const saved = (localStorage.getItem("theme") as ThemeChoice | null) || "system";
-      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-      const resolved = saved === "system" ? (prefersDark ? "dark" : "light") : saved;
+      const saved =
+        (localStorage.getItem("theme") as ThemeChoice | null) || "system";
+      const prefersDark = window.matchMedia(
+        "(prefers-color-scheme: dark)"
+      ).matches;
+      const resolved =
+        saved === "system" ? (prefersDark ? "dark" : "light") : saved;
       setTheme(saved);
       document.documentElement.classList.toggle("dark", resolved === "dark");
     } catch {}
@@ -58,7 +65,9 @@ export default function HeaderClient({ onLoginClick }: HeaderClientProps) {
     setTheme(t);
     localStorage.setItem("theme", t);
     if (t === "system") {
-      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      const prefersDark = window.matchMedia(
+        "(prefers-color-scheme: dark)"
+      ).matches;
       document.documentElement.classList.toggle("dark", prefersDark);
     } else {
       document.documentElement.classList.toggle("dark", t === "dark");
@@ -82,24 +91,38 @@ export default function HeaderClient({ onLoginClick }: HeaderClientProps) {
         {/* Brand */}
         <Link href="/" className="flex items-center gap-3">
           <span className="p-2 rounded-md border border-indigo-300 dark:border-violet-800/40 bg-indigo-100 dark:bg-violet-900/30">
-            <Image src="/cashduezy_logo.png" alt="CashDuezy Logo" width={24} height={24} priority />
+            <Image
+              src="/cashduezy_logo.png"
+              alt="CashDuezy Logo"
+              width={24}
+              height={24}
+              priority
+            />
           </span>
           <span className="text-lg font-semibold">CashDuezy</span>
         </Link>
 
         {/* Nav + Theme */}
         <nav className="flex items-center gap-6 text-sm">
-          {navItems.map((item) => (
-            <Link
-              key={item.label}
-              href={item.href}
-              className={clsx("hover:underline", pathname === item.href && "font-semibold text-violet-500")}
-            >
-              {item.label}
-            </Link>
-          ))}
+          {navItems.map((item) => {
+            const isActive =
+              mounted && (pathname === item.href || pathname.endsWith(item.href));
+            return (
+              <Link
+                key={item.label}
+                href={item.href}
+                aria-current={isActive ? "page" : undefined}
+                className={clsx(
+                  "hover:underline",
+                  isActive && "font-semibold text-violet-500"
+                )}
+              >
+                {item.label}
+              </Link>
+            );
+          })}
 
-          {/* 🔑 Replace login link with button that triggers modal */}
+          {/* 🔑 Login button */}
           {onLoginClick && (
             <button
               onClick={onLoginClick}
@@ -121,16 +144,31 @@ export default function HeaderClient({ onLoginClick }: HeaderClientProps) {
             </button>
             {open && (
               <div className="absolute right-0 mt-2 w-44 rounded-md shadow-lg border bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 overflow-hidden">
-                <button onClick={() => applyTheme("system")} className="w-full px-3 py-2 flex items-center justify-between text-sm hover:bg-gray-100 dark:hover:bg-gray-800">
-                  <span className="flex items-center gap-2"><Monitor className="w-4 h-4" /> System Default</span>
+                <button
+                  onClick={() => applyTheme("system")}
+                  className="w-full px-3 py-2 flex items-center justify-between text-sm hover:bg-gray-100 dark:hover:bg-gray-800"
+                >
+                  <span className="flex items-center gap-2">
+                    <Monitor className="w-4 h-4" /> System Default
+                  </span>
                   {theme === "system" && <span>✓</span>}
                 </button>
-                <button onClick={() => applyTheme("light")} className="w-full px-3 py-2 flex items-center justify-between text-sm hover:bg-gray-100 dark:hover:bg-gray-800">
-                  <span className="flex items-center gap-2"><Sun className="w-4 h-4" /> Light</span>
+                <button
+                  onClick={() => applyTheme("light")}
+                  className="w-full px-3 py-2 flex items-center justify-between text-sm hover:bg-gray-100 dark:hover:bg-gray-800"
+                >
+                  <span className="flex items-center gap-2">
+                    <Sun className="w-4 h-4" /> Light
+                  </span>
                   {theme === "light" && <span>✓</span>}
                 </button>
-                <button onClick={() => applyTheme("dark")} className="w-full px-3 py-2 flex items-center justify-between text-sm hover:bg-gray-100 dark:hover:bg-gray-800">
-                  <span className="flex items-center gap-2"><Moon className="w-4 h-4" /> Dark</span>
+                <button
+                  onClick={() => applyTheme("dark")}
+                  className="w-full px-3 py-2 flex items-center justify-between text-sm hover:bg-gray-100 dark:hover:bg-gray-800"
+                >
+                  <span className="flex items-center gap-2">
+                    <Moon className="w-4 h-4" /> Dark
+                  </span>
                   {theme === "dark" && <span>✓</span>}
                 </button>
               </div>
